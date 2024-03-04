@@ -22,14 +22,24 @@ func main() {
 		log.Fatalf("Failed to establish WebSocket connection: %v", err)
 	}
 
+	var err error
     // Send a message and wait for a response
     msg := "Hello, WebSocket!"
-	p, err := ws.WriteReadMessage(websocket.TextMessage, []byte(msg))
+	p, err := ws.SendMessage(websocket.TextMessage, []byte(msg))
     if err != nil {
         log.Fatalf("Failed to send message: %v", err)
     }
 	log.Printf("Received message: %s", p)
+	// Alternatively, you can use the basic message sending method
+	/* if err := ws.SendMessageBasic(); err != nil {
+		log.Fatalf("Failed to send message: %v", err)
+	} */
+	// Or send a ping message
+	/* if err := ws.SendPing(); err != nil {
+		log.Fatalf("Failed to send ping: %v", err)
+	} */
 
+	log.Println("Closing connection")
 	err = ws.CloseConn()
 	if err != nil {
 		log.Fatalf("Failed to close WebSocket connection: %v", err)

@@ -3,6 +3,7 @@ package wsstat
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"log"
 	"net"
 	"time"
@@ -33,6 +34,109 @@ type WSStat struct {
 	conn   *websocket.Conn
 	dialer *websocket.Dialer
 	Result *Result
+}
+
+// readLoop is a helper function to process received messages.
+func (ws *WSStat) readLoop() {
+	defer func() {
+		ws.conn.Close()
+	}()
+	for {
+		if _, _, err := ws.conn.NextReader(); err != nil {
+			break
+		}
+		// Process received messages if necessary.
+	}
+}
+
+// Dial establishes a new WebSocket connection using the custom dialer defined in this package.
+func (wsStat *WSStat) Dial(url string) error {
+	log.Println("Establishing WebSocket connection")
+	start := time.Now()
+	conn, _, err := wsStat.dialer.Dial(url, nil)
+	if err != nil {
+		return err
+	}
+	totalDialDuration := time.Since(start)
+	wsStat.conn = conn
+	wsStat.Result.WSHandshake = totalDialDuration - wsStat.Result.TLSHandshakeDone
+	wsStat.Result.WSHandshakeDone = totalDialDuration
+	return nil
+}
+
+// WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
+func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
+	log.Println("Sending message through WebSocket connection")
+	start := time.Now()
+	if err := ws.conn.WriteMessage(messageType, data); err != nil {
+		return nil, err
+	}
+	// Assuming immediate response; adjust logic as needed for your use case
+	_, p, err := ws.conn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+	//log.Printf("Received message: %s", p)
+	ws.Result.MessageRoundTrip = time.Since(start)
+	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
+	return p, nil
+}
+
+// WriteReadMessageBasic sends a basic message through the WebSocket connection and measures the round-trip time.
+func (ws *WSStat) SendMessageBasic() error {
+	log.Println("Sending basic message through WebSocket connection")
+	_, err := ws.SendMessage(websocket.TextMessage, []byte("Hello, WebSocket!"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SendPing sends a ping message through the WebSocket connection and measures the round-trip time until the pong response.
+func (ws *WSStat) SendPing() error {
+	log.Println("Sending ping message through WebSocket connection")
+
+	pongReceived := make(chan bool) // Unbuffered channel
+	timeout := time.After(5 * time.Second) // Timeout for the pong response
+
+	ws.conn.SetPongHandler(func(appData string) error {
+		pongReceived <- true
+		return nil
+	})
+
+	go ws.readLoop() // Start the read loop to process the pong message
+
+	start := time.Now()
+	if err := ws.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+		return err
+	}
+
+	select {
+	case <-pongReceived:
+		log.Println("Pong message received")
+		ws.Result.MessageRoundTrip = time.Since(start)
+	case <-timeout:
+		log.Println("Pong response timeout")
+		return errors.New("pong response timeout")
+	}
+
+	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
+	return nil
+}
+
+// ReadMessage reads a message from the WebSocket connection.
+func (ws *WSStat) ReadMessage() (int, []byte, error) {
+	return ws.conn.ReadMessage()
+}
+
+// Close closes the WebSocket connection and measures the time taken to close the connection.
+func (ws *WSStat) CloseConn() error {
+	log.Println("Closing WebSocket connection")
+	start := time.Now()
+	err := ws.conn.Close()
+	ws.Result.ConnectionClose = time.Since(start)
+	ws.Result.TotalTime = ws.Result.FirstMessageResponse + ws.Result.ConnectionClose
+	return err
 }
 
 // NewDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
@@ -103,54 +207,6 @@ func NewDialer(result *Result) *websocket.Dialer {
 			return tlsConn, nil
 		},
 	}
-}
-
-// Dial establishes a new WebSocket connection using the custom dialer defined in this package.
-func (wsStat *WSStat) Dial(url string) error {
-	log.Println("Establishing WebSocket connection")
-	start := time.Now()
-	conn, _, err := wsStat.dialer.Dial(url, nil)
-	if err != nil {
-		return err
-	}
-	totalDialDuration := time.Since(start)
-	wsStat.conn = conn
-	wsStat.Result.WSHandshake = totalDialDuration - wsStat.Result.TLSHandshakeDone
-	wsStat.Result.WSHandshakeDone = totalDialDuration
-	return nil
-}
-
-// WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
-func (ws *WSStat) WriteReadMessage(messageType int, data []byte) ([]byte, error) {
-	log.Println("Sending message through WebSocket connection")
-	start := time.Now()
-	if err := ws.conn.WriteMessage(messageType, data); err != nil {
-		return nil, err
-	}
-	// Assuming immediate response; adjust logic as needed for your use case
-	_, p, err := ws.conn.ReadMessage()
-	if err != nil {
-		return nil, err
-	}
-	//log.Printf("Received message: %s", p)
-	ws.Result.MessageRoundTrip = time.Since(start)
-	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
-	return p, nil
-}
-
-// ReadMessage reads a message from the WebSocket connection.
-func (ws *WSStat) ReadMessage() (int, []byte, error) {
-	return ws.conn.ReadMessage()
-}
-
-// Close closes the WebSocket connection and measures the time taken to close the connection.
-func (ws *WSStat) CloseConn() error {
-	log.Println("Closing WebSocket connection")
-	start := time.Now()
-	err := ws.conn.Close()
-	ws.Result.ConnectionClose = time.Since(start)
-	ws.Result.TotalTime = ws.Result.FirstMessageResponse + ws.Result.ConnectionClose
-	return err
 }
 
 // NewWSStat creates a new WSStat instance and establishes a WebSocket connection.
