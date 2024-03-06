@@ -36,11 +36,18 @@ func main() {
         log.Fatalf("Failed to send message: %v", err)
     }
 	log.Printf("Received message: %s", p)
-	// 4.b. If not interested in the response, you can use the basic message sending method
+	// 4.b. Send a JSON message and wait for the response
+	/* var msg = map[string]interface{}{"json": "message", "compatible": "with", "your": "backend"}
+	p, err := ws.SendMessageJSON(msg)
+    if err != nil {
+        log.Fatalf("Failed to send message: %v", err)
+    }
+	log.Printf("Received message: %s", p) */
+	// 4.c. If not interested in the response, you can use the basic message sending method
 	/* if err := ws.SendMessageBasic(); err != nil {
 		log.Fatalf("Failed to send message: %v", err)
 	} */
-	// 4.c. Alternatively just send a ping message
+	// 4.d. Alternatively just send a ping message
 	/* if err := ws.SendPing(); err != nil {
 		log.Fatalf("Failed to send ping: %v", err)
 	} */

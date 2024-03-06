@@ -66,6 +66,7 @@ func (wsStat *WSStat) Dial(url string) error {
 }
 
 // WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
+// Wraps the gorilla/websocket WriteMessage and ReadMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 	log.Println("Sending message through WebSocket connection")
@@ -73,7 +74,8 @@ func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 	if err := ws.conn.WriteMessage(messageType, data); err != nil {
 		return nil, err
 	}
-	// Assuming immediate response; adjust logic as needed for your use case
+	// Assuming immediate response
+	ws.conn.SetReadDeadline(time.Now().Add(time.Second * 5))
 	_, p, err := ws.conn.ReadMessage()
 	if err != nil {
 		return nil, err
@@ -85,6 +87,7 @@ func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 }
 
 // WriteReadMessageBasic sends a basic message through the WebSocket connection and measures the round-trip time.
+// Wraps the gorilla/websocket WriteMessage and ReadMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessageBasic() error {
 	log.Println("Sending basic message through WebSocket connection")
@@ -95,7 +98,30 @@ func (ws *WSStat) SendMessageBasic() error {
 	return nil
 }
 
+// WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
+// Wraps the gorilla/websocket WriteJSON and ReadJSON methods.
+// Sets result times: MessageRoundTrip, FirstMessageResponse
+func (ws *WSStat) SendMessageJSON(v interface{}) (interface{}, error) {
+	log.Printf("Sending message through WebSocket connection: %v", v)
+	start := time.Now()
+	if err := ws.conn.WriteJSON(&v); err != nil {
+		return nil, err
+	}
+	// Assuming immediate response
+	ws.conn.SetReadDeadline(time.Now().Add(time.Second * 5))
+	var resp interface{}
+	err := ws.conn.ReadJSON(&resp)
+	if err != nil {
+		return nil, err
+	}
+	//log.Printf("Received message: %s", resp)
+	ws.Result.MessageRoundTrip = time.Since(start)
+	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
+	return resp, nil
+}
+
 // SendPing sends a ping message through the WebSocket connection and measures the round-trip time until the pong response.
+// Wraps the gorilla/websocket SetPongHandler and WriteMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendPing() error {
 	log.Println("Sending ping message through WebSocket connection")
