@@ -21,7 +21,7 @@ type Result struct {
 	ConnectionClose  time.Duration // Time to close the connection (complete the connection lifecycle)
 
 	// Cumulative durations over the connection timeline
-	NameLookup           time.Duration // Time to resolve DNS (might be redundant with DNSLookup)
+	DNSLookupDone           time.Duration // Time to resolve DNS (might be redundant with DNSLookup)
 	TCPConnected         time.Duration // Time until the TCP connection is established
 	TLSHandshakeDone     time.Duration // Time until the TLS handshake is completed
 	WSHandshakeDone      time.Duration // Time until the WS handshake is completed
@@ -29,7 +29,7 @@ type Result struct {
 	TotalTime            time.Duration // Total time from opening to closing the connection
 }
 
-// WsStat wraps the gorilla/websocket package and includes latency measurements in Result.
+// WSStat wraps the gorilla/websocket package and includes latency measurements in Result.
 type WSStat struct {
 	conn   *websocket.Conn
 	dialer *websocket.Dialer
@@ -50,6 +50,7 @@ func (ws *WSStat) readLoop() {
 }
 
 // Dial establishes a new WebSocket connection using the custom dialer defined in this package.
+// Sets result times: WSHandshake, WSHandshakeDone
 func (wsStat *WSStat) Dial(url string) error {
 	log.Println("Establishing WebSocket connection")
 	start := time.Now()
@@ -65,6 +66,7 @@ func (wsStat *WSStat) Dial(url string) error {
 }
 
 // WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
+// Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 	log.Println("Sending message through WebSocket connection")
 	start := time.Now()
@@ -83,6 +85,7 @@ func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 }
 
 // WriteReadMessageBasic sends a basic message through the WebSocket connection and measures the round-trip time.
+// Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessageBasic() error {
 	log.Println("Sending basic message through WebSocket connection")
 	_, err := ws.SendMessage(websocket.TextMessage, []byte("Hello, WebSocket!"))
@@ -93,6 +96,7 @@ func (ws *WSStat) SendMessageBasic() error {
 }
 
 // SendPing sends a ping message through the WebSocket connection and measures the round-trip time until the pong response.
+// Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendPing() error {
 	log.Println("Sending ping message through WebSocket connection")
 
@@ -124,12 +128,14 @@ func (ws *WSStat) SendPing() error {
 	return nil
 }
 
+// TODO: make implementation to use this or remove it
 // ReadMessage reads a message from the WebSocket connection.
 func (ws *WSStat) ReadMessage() (int, []byte, error) {
 	return ws.conn.ReadMessage()
 }
 
 // Close closes the WebSocket connection and measures the time taken to close the connection.
+// Sets result times: ConnectionClose, TotalTime
 func (ws *WSStat) CloseConn() error {
 	log.Println("Closing WebSocket connection")
 	start := time.Now()
@@ -140,6 +146,7 @@ func (ws *WSStat) CloseConn() error {
 }
 
 // NewDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
+// Sets result times: DNSLookup, TCPConnection, TLSHandshake, DNSLookupDone, TCPConnected, TLSHandshakeDone
 func NewDialer(result *Result) *websocket.Dialer {
 	log.Println("Creating new WebSocket dialer")
 	return &websocket.Dialer{
@@ -163,8 +170,8 @@ func NewDialer(result *Result) *websocket.Dialer {
 			result.TCPConnection = time.Since(tcpStart)
 
 			// Record the results
-			result.NameLookup = result.DNSLookup
-			result.TCPConnected = result.NameLookup + result.TCPConnection
+			result.DNSLookupDone = result.DNSLookup
+			result.TCPConnected = result.DNSLookupDone + result.TCPConnection
 
 			return conn, nil
 		},
@@ -200,8 +207,8 @@ func NewDialer(result *Result) *websocket.Dialer {
 			result.TLSHandshake = time.Since(tlsStart)
 
 			// Record the results
-			result.NameLookup = result.DNSLookup
-			result.TCPConnected = result.NameLookup + result.TCPConnection
+			result.DNSLookupDone = result.DNSLookup
+			result.TCPConnected = result.DNSLookupDone + result.TCPConnection
 			result.TLSHandshakeDone = result.TCPConnected + result.TLSHandshake
 
 			return tlsConn, nil
