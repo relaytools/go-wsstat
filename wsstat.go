@@ -53,6 +53,16 @@ func (ws *WSStat) readLoop() {
 	}
 }
 
+// Close closes the WebSocket connection and measures the time taken to close the connection.
+// Sets result times: ConnectionClose, TotalTime
+func (ws *WSStat) CloseConn() error {
+	start := time.Now()
+	err := ws.conn.Close()
+	ws.Result.ConnectionClose = time.Since(start)
+	ws.Result.TotalTime = ws.Result.FirstMessageResponse + ws.Result.ConnectionClose
+	return err
+}
+
 // Dial establishes a new WebSocket connection using the custom dialer defined in this package.
 // Sets result times: WSHandshake, WSHandshakeDone
 func (wsStat *WSStat) Dial(url string) error {
@@ -66,6 +76,35 @@ func (wsStat *WSStat) Dial(url string) error {
 	wsStat.Result.WSHandshake = totalDialDuration - wsStat.Result.TLSHandshakeDone
 	wsStat.Result.WSHandshakeDone = totalDialDuration
 	return nil
+}
+
+// TODO: include in example
+// ReadMessage reads a message from the WebSocket connection and measures the round-trip time.
+// Wraps the gorilla/websocket ReadMessage method.
+// Sets result times: MessageRoundTrip, FirstMessageResponse
+// Requires that a timer has been started with WriteMessage to measure the round-trip time.
+func (ws *WSStat) ReadMessage(writeStart time.Time) (int, []byte, error) {
+	ws.conn.SetReadDeadline(time.Now().Add(time.Second * 5))
+	msgType, p, err := ws.conn.ReadMessage()
+	if err != nil {
+		return 0, nil, err
+	}
+	ws.Result.MessageRoundTrip = time.Since(writeStart)
+	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
+	return msgType, p, nil
+}
+
+// TODO: include in example
+// WriteMessage sends a message through the WebSocket connection and 
+// starts a timer to measure the round-trip time.
+// Wraps the gorilla/websocket WriteMessage method.
+func (ws *WSStat) WriteMessage(messageType int, data []byte) (time.Time, error) {
+	start := time.Now()
+	err := ws.conn.WriteMessage(messageType, data)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return start, err
 }
 
 // WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
@@ -82,7 +121,6 @@ func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	//log.Printf("Received message: %s", p)
 	ws.Result.MessageRoundTrip = time.Since(start)
 	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
 	return p, nil
@@ -148,22 +186,6 @@ func (ws *WSStat) SendPing() error {
 
 	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
 	return nil
-}
-
-// TODO: make implementation to use this or remove it
-// ReadMessage reads a message from the WebSocket connection.
-func (ws *WSStat) ReadMessage() (int, []byte, error) {
-	return ws.conn.ReadMessage()
-}
-
-// Close closes the WebSocket connection and measures the time taken to close the connection.
-// Sets result times: ConnectionClose, TotalTime
-func (ws *WSStat) CloseConn() error {
-	start := time.Now()
-	err := ws.conn.Close()
-	ws.Result.ConnectionClose = time.Since(start)
-	ws.Result.TotalTime = ws.Result.FirstMessageResponse + ws.Result.ConnectionClose
-	return err
 }
 
 // durations returns a map of the time.Duration members of Result.
