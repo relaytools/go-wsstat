@@ -35,7 +35,7 @@ func main() {
     if err != nil {
         log.Fatalf("Failed to send message: %v", err)
     }
-	log.Printf("Received message: %s", p)
+	fmt.Printf("Received message: %s\n\n", p)
 	// 4.b. Send a JSON message and wait for the response
 	/* var msg = map[string]interface{}{"json": "message", "compatible": "with", "your": "backend"}
 	p, err := ws.SendMessageJSON(msg)
@@ -60,10 +60,5 @@ func main() {
 	}
 
     // 6. Print the results
-    fmt.Println("DNS Lookup Time:", ws.Result.DNSLookupDone)
-    fmt.Println("TCP Connected:", ws.Result.TCPConnected)
-    fmt.Println("TLS Handshake Done:", ws.Result.TLSHandshakeDone)
-    fmt.Println("WS Handshake Done:", ws.Result.WSHandshakeDone)
-    fmt.Println("First Message Round Trip Done:", ws.Result.FirstMessageResponse)
-    fmt.Println("Total Connection Time:", ws.Result.TotalTime)
+	fmt.Printf("%+v\n", ws.Result)
 }

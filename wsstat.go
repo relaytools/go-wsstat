@@ -1,10 +1,14 @@
 package wsstat
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
+	"io"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -20,7 +24,7 @@ type Result struct {
 	ConnectionClose  time.Duration // Time to close the connection (complete the connection lifecycle)
 
 	// Cumulative durations over the connection timeline
-	DNSLookupDone           time.Duration // Time to resolve DNS (might be redundant with DNSLookup)
+	DNSLookupDone        time.Duration // Time to resolve DNS (might be redundant with DNSLookup)
 	TCPConnected         time.Duration // Time until the TCP connection is established
 	TLSHandshakeDone     time.Duration // Time until the TLS handshake is completed
 	WSHandshakeDone      time.Duration // Time until the WS handshake is completed
@@ -158,6 +162,85 @@ func (ws *WSStat) CloseConn() error {
 	ws.Result.ConnectionClose = time.Since(start)
 	ws.Result.TotalTime = ws.Result.FirstMessageResponse + ws.Result.ConnectionClose
 	return err
+}
+
+func (r *Result) durations() map[string]time.Duration {
+	return map[string]time.Duration{
+		"DNSLookup":        r.DNSLookup,
+		"TCPConnection":    r.TCPConnection,
+		"TLSHandshake":     r.TLSHandshake,
+		"WSHandshake":      r.WSHandshake,
+		"MessageRoundTrip": r.MessageRoundTrip,
+		"ConnectionClose":  r.ConnectionClose,
+
+		"DNSLookupDone":		r.DNSLookupDone,
+		"TCPConnected":			r.TCPConnected,
+		"TLSHandshakeDone":		r.TLSHandshakeDone,
+		"WSHandshakeDone":		r.WSHandshakeDone,
+		"FirstMessageResponse":	r.FirstMessageResponse,
+		"TotalTime":			r.TotalTime,
+	}
+}
+
+// Format formats stats result.
+func (r Result) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('+') {
+			var buf bytes.Buffer
+			fmt.Fprintf(&buf, "DNS lookup:     %4d ms\n",
+				int(r.DNSLookup/time.Millisecond))
+			fmt.Fprintf(&buf, "TCP connection: %4d ms\n",
+				int(r.TCPConnection/time.Millisecond))
+			fmt.Fprintf(&buf, "TLS handshake:  %4d ms\n",
+				int(r.TLSHandshake/time.Millisecond))
+			fmt.Fprintf(&buf, "WS handshake:   %4d ms\n",
+				int(r.WSHandshake/time.Millisecond))
+			fmt.Fprintf(&buf, "Msg round trip: %4d ms\n",
+				int(r.MessageRoundTrip/time.Millisecond))
+
+			if r.ConnectionClose > 0 {
+				fmt.Fprintf(&buf, "Close time:     %4d ms\n\n",
+					int(r.ConnectionClose/time.Millisecond))
+			} else {
+				fmt.Fprintf(&buf, "Close time:     %4s ms\n\n", "-")
+			}
+
+			fmt.Fprintf(&buf, "Name lookup done:   %4d ms\n",
+				int(r.DNSLookupDone/time.Millisecond))
+			fmt.Fprintf(&buf, "TCP connected:      %4d ms\n",
+				int(r.TCPConnected/time.Millisecond))
+			fmt.Fprintf(&buf, "TLS handshake done: %4d ms\n",
+				int(r.TLSHandshakeDone/time.Millisecond))
+			fmt.Fprintf(&buf, "WS handshake done:  %4d ms\n",
+				int(r.WSHandshakeDone/time.Millisecond))
+			fmt.Fprintf(&buf, "First msg response: %4d ms\n",
+				int(r.WSHandshakeDone/time.Millisecond))
+
+			if r.TotalTime > 0 {
+				fmt.Fprintf(&buf, "Total:              %4d ms\n",
+					int(r.TotalTime/time.Millisecond))
+			} else {
+				fmt.Fprintf(&buf, "Total:          %4s ms\n", "-")
+			}
+			io.WriteString(s, buf.String())
+			return
+		}
+
+		fallthrough
+	case 's', 'q':
+		d := r.durations()
+		list := make([]string, 0, len(d))
+		for k, v := range d {
+			// Handle when End function is not called
+			if (k == "ConnectionClose" || k == "TotalTime") && r.ConnectionClose == 0 {
+				list = append(list, fmt.Sprintf("%s: - ms", k))
+				continue
+			}
+			list = append(list, fmt.Sprintf("%s: %d ms", k, v/time.Millisecond))
+		}
+		io.WriteString(s, strings.Join(list, ", "))
+	}
 }
 
 // NewDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
