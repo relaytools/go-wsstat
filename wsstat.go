@@ -14,6 +14,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Result holds durations of each phase of a WebSocket connection
+// and cumulative durations over the connection timeline.
 type Result struct {
 	// Duration of each phase of the connection
 	DNSLookup        time.Duration // Time to resolve DNS
@@ -164,6 +166,7 @@ func (ws *WSStat) CloseConn() error {
 	return err
 }
 
+// durations returns a map of the time.Duration members of Result.
 func (r *Result) durations() map[string]time.Duration {
 	return map[string]time.Duration{
 		"DNSLookup":        r.DNSLookup,
@@ -182,7 +185,7 @@ func (r *Result) durations() map[string]time.Duration {
 	}
 }
 
-// Format formats stats result.
+// Format formats the time.Duration members of Result.
 func (r Result) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
