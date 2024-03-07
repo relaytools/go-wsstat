@@ -215,7 +215,7 @@ func (r Result) Format(s fmt.State, verb rune) {
 			fmt.Fprintf(&buf, "WS handshake done:  %4d ms\n",
 				int(r.WSHandshakeDone/time.Millisecond))
 			fmt.Fprintf(&buf, "First msg response: %4d ms\n",
-				int(r.WSHandshakeDone/time.Millisecond))
+				int(r.FirstMessageResponse/time.Millisecond))
 
 			if r.TotalTime > 0 {
 				fmt.Fprintf(&buf, "Total:              %4d ms\n",
