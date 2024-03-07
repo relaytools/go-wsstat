@@ -38,14 +38,13 @@ type WSStat struct {
 
 // readLoop is a helper function to process received messages.
 func (ws *WSStat) readLoop() {
-	defer func() {
-		ws.conn.Close()
-	}()
+	defer ws.conn.Close()
 	for {
+        // Although the message content is not used directly here,
+		// calling NextReader is necessary to trigger the pong handler.
 		if _, _, err := ws.conn.NextReader(); err != nil {
 			break
 		}
-		// Process received messages if necessary.
 	}
 }
 
