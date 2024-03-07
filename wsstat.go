@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"log"
 	"net"
 	"time"
 
@@ -51,7 +50,6 @@ func (ws *WSStat) readLoop() {
 // Dial establishes a new WebSocket connection using the custom dialer defined in this package.
 // Sets result times: WSHandshake, WSHandshakeDone
 func (wsStat *WSStat) Dial(url string) error {
-	log.Println("Establishing WebSocket connection")
 	start := time.Now()
 	conn, _, err := wsStat.dialer.Dial(url, nil)
 	if err != nil {
@@ -68,7 +66,6 @@ func (wsStat *WSStat) Dial(url string) error {
 // Wraps the gorilla/websocket WriteMessage and ReadMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
-	log.Println("Sending message through WebSocket connection")
 	start := time.Now()
 	if err := ws.conn.WriteMessage(messageType, data); err != nil {
 		return nil, err
@@ -89,7 +86,6 @@ func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 // Wraps the gorilla/websocket WriteMessage and ReadMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessageBasic() error {
-	log.Println("Sending basic message through WebSocket connection")
 	_, err := ws.SendMessage(websocket.TextMessage, []byte("Hello, WebSocket!"))
 	if err != nil {
 		return err
@@ -101,7 +97,6 @@ func (ws *WSStat) SendMessageBasic() error {
 // Wraps the gorilla/websocket WriteJSON and ReadJSON methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessageJSON(v interface{}) (interface{}, error) {
-	log.Printf("Sending message through WebSocket connection: %v", v)
 	start := time.Now()
 	if err := ws.conn.WriteJSON(&v); err != nil {
 		return nil, err
@@ -123,8 +118,6 @@ func (ws *WSStat) SendMessageJSON(v interface{}) (interface{}, error) {
 // Wraps the gorilla/websocket SetPongHandler and WriteMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendPing() error {
-	log.Println("Sending ping message through WebSocket connection")
-
 	pongReceived := make(chan bool) // Unbuffered channel
 	timeout := time.After(5 * time.Second) // Timeout for the pong response
 
@@ -142,10 +135,8 @@ func (ws *WSStat) SendPing() error {
 
 	select {
 	case <-pongReceived:
-		log.Println("Pong message received")
 		ws.Result.MessageRoundTrip = time.Since(start)
 	case <-timeout:
-		log.Println("Pong response timeout")
 		return errors.New("pong response timeout")
 	}
 
@@ -162,7 +153,6 @@ func (ws *WSStat) ReadMessage() (int, []byte, error) {
 // Close closes the WebSocket connection and measures the time taken to close the connection.
 // Sets result times: ConnectionClose, TotalTime
 func (ws *WSStat) CloseConn() error {
-	log.Println("Closing WebSocket connection")
 	start := time.Now()
 	err := ws.conn.Close()
 	ws.Result.ConnectionClose = time.Since(start)
@@ -173,7 +163,6 @@ func (ws *WSStat) CloseConn() error {
 // NewDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
 // Sets result times: DNSLookup, TCPConnection, TLSHandshake, DNSLookupDone, TCPConnected, TLSHandshakeDone
 func NewDialer(result *Result) *websocket.Dialer {
-	log.Println("Creating new WebSocket dialer")
 	return &websocket.Dialer{
 		NetDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			// Perform DNS lookup
@@ -243,7 +232,6 @@ func NewDialer(result *Result) *websocket.Dialer {
 
 // NewWSStat creates a new WSStat instance and establishes a WebSocket connection.
 func NewWSStat() *WSStat {
-	log.Println("Creating new WSStat instance")
     result := &Result{}
 	dialer := NewDialer(result) // Use the custom dialer we defined
 

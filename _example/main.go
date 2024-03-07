@@ -54,7 +54,6 @@ func main() {
 
 	// 5. Close the WebSocket connection
 	// This triggers the total connection time timer, which includes the call to close the connection
-	log.Println("Closing connection")
 	err = ws.CloseConn()
 	if err != nil {
 		log.Fatalf("Failed to close WebSocket connection: %v", err)
