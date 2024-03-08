@@ -268,6 +268,29 @@ func (r Result) Format(s fmt.State, verb rune) {
 	}
 }
 
+// MeasureLatency establishes a WebSocket connection, sends a message, reads the response,
+// and closes the connection. Returns the Result and the response message.
+// Sets all times in the Result object.
+func MeasureLatency(url string, msg string) (Result, []byte, error) {
+	ws := NewWSStat()
+	if err := ws.Dial(url); err != nil {
+		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
+		return Result{}, nil, err
+	}
+	start, err := ws.WriteMessage(websocket.TextMessage, []byte(msg))
+	if err != nil {
+		fmt.Printf("Failed to write message: %v\n", err)
+		return Result{}, nil, err
+	}
+	_, p, err := ws.ReadMessage(start)
+	if err != nil {
+		fmt.Printf("Failed to read message: %v\n", err)
+		return Result{}, nil, err
+	}
+	ws.CloseConn()
+	return *ws.Result, p, nil
+}
+
 // NewDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
 // Sets result times: DNSLookup, TCPConnection, TLSHandshake, DNSLookupDone, TCPConnected, TLSHandshakeDone
 func NewDialer(result *Result) *websocket.Dialer {

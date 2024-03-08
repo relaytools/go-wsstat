@@ -14,18 +14,25 @@ func main() {
 	if len(args) < 2 {
 		log.Fatalf("Usage: go run main.go URL")
 	}
-    wsURL := args[1]
+    url := args[1]
 
-	// basicExample(wsURL)
-	detailedExample(wsURL)
+	basicExample(url, "Measuring latency of a WebSocket connection!")
+	detailedExample(url)
 }
 
-func basicExample(wsURL string) {
-	// TODO: implement basic example
-	return
+// This example demonstrates how to measure the latency of a WebSocket connection
+// with a single function call.
+func basicExample(url string, msg string) {
+	fmt.Print("> Running basic example\n")
+	result, p, _ := wsstat.MeasureLatency(url, msg)
+	fmt.Printf("Response: %s\n\n", p)
+	fmt.Printf("%+v\n", result)
 }
 
+// This example demonstrates how to measure the latency of a WebSocket connection
+// with more control over the steps in the process.
 func detailedExample(wsURL string) {
+	fmt.Print("> Running detailed example\n")
 	var err error
 
 	// 1. Create a new WSStat instance
