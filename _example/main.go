@@ -16,15 +16,20 @@ func main() {
 	}
     url := args[1]
 
-	basicExample(url, "Measuring latency of a WebSocket connection!")
+	basicExample(url)
 	detailedExample(url)
 }
 
 // This example demonstrates how to measure the latency of a WebSocket connection
 // with a single function call.
-func basicExample(url string, msg string) {
+func basicExample(url string) {
 	fmt.Print("> Running basic example\n")
+	// Measure with a text message
+	var msg = "Hello, WebSocket!"
 	result, p, _ := wsstat.MeasureLatency(url, msg)
+	// Measure with a JSON message
+	/* var msg = map[string]interface{}{"json": "message", "compatible": "with", "your": "target", "ws": "server"}
+	result, p, _ := wsstat.MeasureLatencyJSON(url, msg) */
 	fmt.Printf("Response: %s\n\n", p)
 	fmt.Printf("%+v\n", result)
 }
