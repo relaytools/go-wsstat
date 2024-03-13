@@ -309,6 +309,23 @@ func MeasureLatencyJSON(url string, v interface{}) (Result, interface{}, error) 
 	return *ws.Result, p, nil
 }
 
+// MeasureLatencyPing establishes a WebSocket connection, sends a ping message, and measures the round-trip time.
+// Sets all times in the Result object and returns it.
+func MeasureLatencyPing(url string) (Result, error) {
+	ws := NewWSStat()
+	if err := ws.Dial(url); err != nil {
+		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
+		return Result{}, err
+	}
+	err := ws.SendPing()
+	if err != nil {
+		fmt.Print("Failed to send ping", err)
+		return Result{}, err
+	}
+	ws.CloseConn()
+	return *ws.Result, nil
+}
+
 // NewDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
 // Sets result times: DNSLookup, TCPConnection, TLSHandshake, DNSLookupDone, TCPConnected, TLSHandshakeDone
 func NewDialer(result *Result) *websocket.Dialer {

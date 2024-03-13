@@ -27,10 +27,13 @@ func basicExample(url string) {
 	// Measure with a text message
 	var msg = "Hello, WebSocket!"
 	result, p, _ := wsstat.MeasureLatency(url, msg)
+	fmt.Printf("Response: %s\n\n", p)
 	// Measure with a JSON message
 	/* var msg = map[string]interface{}{"json": "message", "compatible": "with", "your": "target", "ws": "server"}
-	result, p, _ := wsstat.MeasureLatencyJSON(url, msg) */
-	fmt.Printf("Response: %s\n\n", p)
+	result, p, _ := wsstat.MeasureLatencyJSON(url, msg)
+	fmt.Printf("Response: %s\n\n", p) */
+	// Measure with a ping message
+	//result, _ := wsstat.MeasureLatencyPing(url)
 	fmt.Printf("%+v\n", result)
 }
 
