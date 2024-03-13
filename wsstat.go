@@ -58,7 +58,11 @@ func (ws *WSStat) readLoop() {
 // Sets result times: ConnectionClose, TotalTime
 func (ws *WSStat) CloseConn() error {
 	start := time.Now()
-	err := ws.conn.Close()
+	err := ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		return err
+	}
+	err = ws.conn.Close()
 	ws.Result.ConnectionClose = time.Since(start)
 	ws.Result.TotalTime = ws.Result.FirstMessageResponse + ws.Result.ConnectionClose
 	return err
