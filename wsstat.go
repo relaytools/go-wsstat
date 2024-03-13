@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"strings"
 	"time"
 
@@ -67,7 +68,10 @@ func (ws *WSStat) CloseConn() error {
 // Sets result times: WSHandshake, WSHandshakeDone
 func (wsStat *WSStat) Dial(url string) error {
 	start := time.Now()
-	conn, _, err := wsStat.dialer.Dial(url, nil)
+	// TODO: figure out if these headers are enough, and also if they need to be customizable
+	headers := http.Header{}
+	headers.Add("Origin", "http://example.com")
+	conn, _, err := wsStat.dialer.Dial(url, headers)
 	if err != nil {
 		return err
 	}
