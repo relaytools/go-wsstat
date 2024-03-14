@@ -91,6 +91,69 @@ func TestMeasureLatencyPing(t *testing.T) {
 	}
 }
 
+func TestNewWSStat(t *testing.T) {
+	ws := NewWSStat()
+
+	if ws.dialer == nil {
+		t.Error("Expected non-nil dialer")
+	}
+	if ws.Result == nil {
+		t.Error("Expected non-nil result")
+	}
+}
+
+func TestDial(t *testing.T) {
+	ws := NewWSStat()
+	err := ws.Dial(echoServerAddrWs)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if ws.Result.WSHandshake <= 0 {
+		t.Error("Invalid WSHandshake time")
+	}
+	if ws.Result.WSHandshakeDone <= 0 {
+		t.Error("Invalid WSHandshakeDone time")
+	}
+}
+
+func TestWriteReadClose(t *testing.T) {
+	ws := NewWSStat()
+	err := ws.Dial(echoServerAddrWs)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	message := []byte("Hello, world!")
+	startTime, err := ws.WriteMessage(websocket.TextMessage, message)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	_, receivedMessage, err := ws.ReadMessage(startTime)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if string(receivedMessage) != string(message) {
+		t.Errorf("Received message does not match sent message")
+	}
+	if ws.Result.MessageRoundTrip <= 0 {
+		t.Error("Invalid MessageRoundTrip time")
+	}
+	if ws.Result.FirstMessageResponse <= 0 {
+		t.Error("Invalid FirstMessageResponse time")
+	}
+
+	err = ws.CloseConn()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if ws.Result.ConnectionClose <= 0 {
+		t.Error("Invalid ConnectionClose time")
+	}
+	if ws.Result.TotalTime <= 0 {
+		t.Error("Invalid TotalTime")
+	}
+}
+
 // Helpers
 
 // StartEchoServer starts a WebSocket server that echoes back any received messages.
