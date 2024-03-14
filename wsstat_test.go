@@ -75,6 +75,22 @@ func TestMeasureLatencyJSON(t *testing.T) {
 	}
 }
 
+func TestMeasureLatencyPing(t *testing.T) {
+	result, err := MeasureLatencyPing(echoServerAddrWs)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result.TotalTime <= 0 {
+		t.Errorf("Invalid total time: %v", result.TotalTime)
+	}
+	if result.MessageRoundTrip <= 0 {
+		t.Errorf("Invalid message round trip time: %v", result.MessageRoundTrip)
+	}
+	if result.FirstMessageResponse <= 0 {
+		t.Errorf("Invalid first message response time: %v", result.FirstMessageResponse)
+	}
+}
+
 // Helpers
 
 // StartEchoServer starts a WebSocket server that echoes back any received messages.
