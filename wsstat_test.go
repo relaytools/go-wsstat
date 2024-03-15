@@ -17,6 +17,7 @@ import (
 var (	
 	serverAddr = "localhost:8080"
 	echoServerAddrWs = "ws://" + serverAddr + "/echo"
+	// TODO: support wss in tests
 )
 
 // TestMain sets up the test server and runs the tests in this file.
@@ -247,6 +248,7 @@ func startEchoServer(addr string) {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
+// Validation of WSStat results after Dial has been called
 func validateDialResult(ws *WSStat, url string, msg string, t *testing.T) {
 	if ws.Result.DNSLookup <= 0 {
 		t.Errorf("Invalid WSHandshake time in %s", msg)
@@ -276,6 +278,7 @@ func validateDialResult(ws *WSStat, url string, msg string, t *testing.T) {
 	}
 }
 
+// Validation of WSStat results after ReadMessage or SendMessage have been called
 func validateSendResult(ws *WSStat, msg string, t *testing.T) {
 	if ws.Result.MessageRoundTrip <= 0 {
 		t.Errorf("Invalid MessageRoundTrip time in %s", msg)
@@ -285,6 +288,7 @@ func validateSendResult(ws *WSStat, msg string, t *testing.T) {
 	}
 }
 
+// Validation of WSStat results after CloseConn has been called
 func validateCloseResult(ws *WSStat, msg string, t *testing.T) {
 	if ws.Result.ConnectionClose <= 0 {
 		t.Errorf("Invalid ConnectionClose time in %s", msg)
