@@ -1,10 +1,13 @@
 package wsstat
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,7 +23,7 @@ var (
 func TestMain(m *testing.M) {
 	// Set up test server
 	go func() {
-		StartEchoServer(serverAddr)
+		startEchoServer(serverAddr)
 	}()
 
 	// Ensure the echo server starts before any tests run
@@ -154,10 +157,76 @@ func TestWriteReadClose(t *testing.T) {
 	}
 }
 
+func TestSendMessage(t *testing.T) {
+	ws := NewWSStat()
+	err := ws.Dial(echoServerAddrWs)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	validateDialResult(ws, echoServerAddrWs, getFunctionName(), t)
+
+	message := []byte("Hello, world!")
+	response, err := ws.SendMessage(websocket.TextMessage, message)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !bytes.Equal(response, message) {
+		t.Errorf("Received message does not match sent message")
+	}
+	validateSendResult(ws, getFunctionName(), t)
+
+	err = ws.CloseConn()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	validateCloseResult(ws, getFunctionName(), t)
+}
+
+func TestSendMessageJSON(t *testing.T) {
+	ws := NewWSStat()
+	err := ws.Dial(echoServerAddrWs)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	validateDialResult(ws, echoServerAddrWs, getFunctionName(), t)
+
+	message := struct {
+		Text string `json:"text"`
+	}{
+		Text: "Hello, world!",
+	}
+	response, err := ws.SendMessageJSON(message)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	responseMap, ok := response.(map[string]interface{})
+	if !ok {
+		t.Errorf("Response is not a map")
+		return
+	}
+	if responseMap["text"] != message.Text {
+		t.Errorf("Unexpected response: %s", responseMap)
+	}
+	validateSendResult(ws, getFunctionName(), t)
+
+	err = ws.CloseConn()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	validateCloseResult(ws, getFunctionName(), t)
+}
+
+
 // Helpers
 
-// StartEchoServer starts a WebSocket server that echoes back any received messages.
-func StartEchoServer(addr string) {
+// getFunctionName returns the name of the calling function.
+func getFunctionName() string {
+    pc, _, _, _ := runtime.Caller(1)
+    return strings.TrimPrefix(runtime.FuncForPC(pc).Name(), "main.")
+}
+
+// startEchoServer starts a WebSocket server that echoes back any received messages.
+func startEchoServer(addr string) {
 	var upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true // Allow all origins
@@ -190,4 +259,51 @@ func StartEchoServer(addr string) {
 
 	fmt.Printf("Echo server started on %s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+func validateDialResult(ws *WSStat, url string, msg string, t *testing.T) {
+	if ws.Result.DNSLookup <= 0 {
+		t.Errorf("Invalid WSHandshake time in %s", msg)
+	}
+	if ws.Result.DNSLookupDone <= 0 {
+		t.Errorf("Invalid WSHandshakeDone time in %s", msg)
+	}
+	if ws.Result.TCPConnection <= 0 {
+		t.Errorf("Invalid WSHandshake time in %s", msg)
+	}
+	if ws.Result.TCPConnected <= 0 {
+		t.Errorf("Invalid WSHandshakeDone time in %s", msg)
+	}
+	if strings.Contains(url, "wss://") {
+		if ws.Result.TLSHandshake <= 0 {
+			t.Errorf("Invalid WSHandshake time in %s", msg)
+		}
+		if ws.Result.TLSHandshakeDone <= 0 {
+			t.Errorf("Invalid WSHandshakeDone time in %s", msg)
+		}
+	}
+	if ws.Result.WSHandshake <= 0 {
+		t.Errorf("Invalid WSHandshake time in %s", msg)
+	}
+	if ws.Result.WSHandshakeDone <= 0 {
+		t.Errorf("Invalid WSHandshakeDone time in %s", msg)
+	}
+}
+
+func validateSendResult(ws *WSStat, msg string, t *testing.T) {
+	if ws.Result.MessageRoundTrip <= 0 {
+		t.Errorf("Invalid MessageRoundTrip time in %s", msg)
+	}
+	if ws.Result.FirstMessageResponse <= 0 {
+		t.Errorf("Invalid FirstMessageResponse time in %s", msg)
+	}
+}
+
+func validateCloseResult(ws *WSStat, msg string, t *testing.T) {
+	if ws.Result.ConnectionClose <= 0 {
+		t.Errorf("Invalid ConnectionClose time in %s", msg)
+	}
+	if ws.Result.TotalTime <= 0 {
+		t.Errorf("Invalid TotalTime in %s", msg)
+	}
 }
