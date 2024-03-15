@@ -54,7 +54,7 @@ func (ws *WSStat) readLoop() {
 	}
 }
 
-// Close closes the WebSocket connection and measures the time taken to close the connection.
+// CloseConn closes the WebSocket connection and measures the time taken to close the connection.
 // Sets result times: ConnectionClose, TotalTime
 func (ws *WSStat) CloseConn() error {
 	start := time.Now()
@@ -70,27 +70,27 @@ func (ws *WSStat) CloseConn() error {
 
 // Dial establishes a new WebSocket connection using the custom dialer defined in this package.
 // Sets result times: WSHandshake, WSHandshakeDone
-func (wsStat *WSStat) Dial(url string) error {
+func (ws *WSStat) Dial(url string) error {
 	start := time.Now()
 	// TODO: figure out if these headers are enough, and also if they need to be customizable
 	headers := http.Header{}
 	headers.Add("Origin", "http://example.com")
-	conn, _, err := wsStat.dialer.Dial(url, headers)
+	conn, _, err := ws.dialer.Dial(url, headers)
 	if err != nil {
 		return err
 	}
 	totalDialDuration := time.Since(start)
-	wsStat.conn = conn
-	wsStat.Result.WSHandshake = totalDialDuration - wsStat.Result.TLSHandshakeDone
-	wsStat.Result.WSHandshakeDone = totalDialDuration
+	ws.conn = conn
+	ws.Result.WSHandshake = totalDialDuration - ws.Result.TLSHandshakeDone
+	ws.Result.WSHandshakeDone = totalDialDuration
 	return nil
 }
 
-// TODO: include in example
 // ReadMessage reads a message from the WebSocket connection and measures the round-trip time.
 // Wraps the gorilla/websocket ReadMessage method.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 // Requires that a timer has been started with WriteMessage to measure the round-trip time.
+// TODO: include in example
 func (ws *WSStat) ReadMessage(writeStart time.Time) (int, []byte, error) {
 	ws.conn.SetReadDeadline(time.Now().Add(time.Second * 5))
 	msgType, p, err := ws.conn.ReadMessage()
@@ -102,10 +102,10 @@ func (ws *WSStat) ReadMessage(writeStart time.Time) (int, []byte, error) {
 	return msgType, p, nil
 }
 
-// TODO: include in example
 // WriteMessage sends a message through the WebSocket connection and 
 // starts a timer to measure the round-trip time.
 // Wraps the gorilla/websocket WriteMessage method.
+// TODO: include in example
 func (ws *WSStat) WriteMessage(messageType int, data []byte) (time.Time, error) {
 	start := time.Now()
 	err := ws.conn.WriteMessage(messageType, data)
@@ -115,7 +115,7 @@ func (ws *WSStat) WriteMessage(messageType int, data []byte) (time.Time, error) 
 	return start, err
 }
 
-// WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
+// SendMessage sends a message through the WebSocket connection and measures the round-trip time.
 // Wraps the gorilla/websocket WriteMessage and ReadMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
@@ -134,7 +134,7 @@ func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 	return p, nil
 }
 
-// WriteReadMessageBasic sends a basic message through the WebSocket connection and measures the round-trip time.
+// SendMessageBasic sends a basic message through the WebSocket connection and measures the round-trip time.
 // Wraps the gorilla/websocket WriteMessage and ReadMessage methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessageBasic() error {
@@ -145,7 +145,7 @@ func (ws *WSStat) SendMessageBasic() error {
 	return nil
 }
 
-// WriteMessage sends a message through the WebSocket connection and measures the round-trip time.
+// SendMessageJSON sends a message through the WebSocket connection and measures the round-trip time.
 // Wraps the gorilla/websocket WriteJSON and ReadJSON methods.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 func (ws *WSStat) SendMessageJSON(v interface{}) (interface{}, error) {
