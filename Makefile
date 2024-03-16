@@ -12,8 +12,8 @@ vet:
 	go vet ${PACKAGES}
 
 lint:
-	go install golang.org/x/lint/golint@latest
-	$(shell go list ./... | grep -v vendor | xargs -n1 golint )
+	@go install golang.org/x/lint/golint@latest
+	go list ./... | grep -v vendor | xargs -n1 golint
 
 cover:
 	go test -coverprofile=cover.out
