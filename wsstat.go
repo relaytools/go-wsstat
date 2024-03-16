@@ -319,8 +319,9 @@ func MeasureLatencyJSON(url string, v interface{}) (Result, interface{}, error) 
 	return *ws.Result, p, nil
 }
 
-// MeasureLatencyPing establishes a WebSocket connection, sends a ping message, and measures the round-trip time.
-// Sets all times in the Result object and returns it.
+// MeasureLatencyPing establishes a WebSocket connection, sends a ping message, awaits the pong response,
+// and closes the connection. Returns the Result.
+// Sets all times in the Result object.
 func MeasureLatencyPing(url string) (Result, error) {
 	ws := NewWSStat()
 	if err := ws.Dial(url); err != nil {
