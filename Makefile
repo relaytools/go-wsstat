@@ -18,8 +18,9 @@ lint:
 cover:
 	@go get golang.org/x/tools/cmd/cover		
 	go test -coverprofile=cover.out
-	go tool cover -html cover.out
-	sleep 1
-	rm cover.out
+	go tool cover -html cover.out -o coverage.html
+	open coverage.html
+	sleep 1 # give the browser time to open before removing the file
+	rm cover.out coverage.html
 
 .PHONY: test test-race vet lint cover	
