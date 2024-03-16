@@ -12,15 +12,14 @@ vet:
 	go vet ${PACKAGES}
 
 lint:
-	@go get golang.org/x/lint/golint
-	go list ./... | grep -v vendor | xargs -n1 golint 
+	go install golang.org/x/lint/golint@latest
+	$(shell go list ./... | grep -v vendor | xargs -n1 golint )
 
 cover:
-	@go get golang.org/x/tools/cmd/cover		
 	go test -coverprofile=cover.out
 	go tool cover -html cover.out -o coverage.html
-	open coverage.html
-	sleep 1 # give the browser time to open before removing the file
-	rm cover.out coverage.html
+	@which xdg-open &> /dev/null && xdg-open coverage.html || open coverage.html || echo "Open coverage.html manually"
+	@sleep 1
+	@rm -f cover.out coverage.html
 
-.PHONY: test test-race vet lint cover	
+.PHONY: test-all test test-race vet lint cover
