@@ -18,7 +18,7 @@ lint:
 cover:
 	go test -coverprofile=cover.out
 	go tool cover -html cover.out -o coverage.html
-	@which xdg-open &> /dev/null && xdg-open coverage.html || open coverage.html || echo "Open coverage.html manually"
+	@which xdg-open &> /dev/null && xdg-open coverage.html || open coverage.html || echo "No way to open coverage.html automatically found."
 	@sleep 1
 	@rm -f cover.out coverage.html
 
