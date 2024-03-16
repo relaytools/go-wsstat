@@ -336,9 +336,9 @@ func MeasureLatencyPing(url string) (Result, error) {
 	return *ws.Result, nil
 }
 
-// NewDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
+// newDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
 // Sets result times: DNSLookup, TCPConnection, TLSHandshake, DNSLookupDone, TCPConnected, TLSHandshakeDone
-func NewDialer(result *Result) *websocket.Dialer {
+func newDialer(result *Result) *websocket.Dialer {
 	return &websocket.Dialer{
 		NetDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			// Perform DNS lookup
@@ -409,7 +409,7 @@ func NewDialer(result *Result) *websocket.Dialer {
 // NewWSStat creates a new WSStat instance and establishes a WebSocket connection.
 func NewWSStat() *WSStat {
     result := &Result{}
-	dialer := NewDialer(result) // Use the custom dialer we defined
+	dialer := newDialer(result) // Use the custom dialer we defined
 
     ws := &WSStat{
         dialer: dialer,
