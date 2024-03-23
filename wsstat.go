@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -72,12 +73,12 @@ func (ws *WSStat) CloseConn() error {
 
 // Dial establishes a new WebSocket connection using the custom dialer defined in this package.
 // Sets result times: WSHandshake, WSHandshakeDone
-func (ws *WSStat) Dial(url string) error {
+func (ws *WSStat) Dial(url *url.URL) error {
 	start := time.Now()
 	// TODO: figure out if these headers are enough, and also if they need to be customizable
 	headers := http.Header{}
 	headers.Add("Origin", "http://example.com")
-	conn, _, err := ws.dialer.Dial(url, headers)
+	conn, _, err := ws.dialer.Dial(url.String(), headers)
 	if err != nil {
 		return err
 	}
@@ -281,7 +282,7 @@ func (r Result) Format(s fmt.State, verb rune) {
 // MeasureLatency establishes a WebSocket connection, sends a message, reads the response,
 // and closes the connection. Returns the Result and the response message.
 // Sets all times in the Result object.
-func MeasureLatency(url string, msg string) (Result, []byte, error) {
+func MeasureLatency(url *url.URL, msg string) (Result, []byte, error) {
 	ws := NewWSStat()
 	if err := ws.Dial(url); err != nil {
 		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
@@ -304,7 +305,7 @@ func MeasureLatency(url string, msg string) (Result, []byte, error) {
 // MeasureLatencyJSON establishes a WebSocket connection, sends a JSON message, reads the response,
 // and closes the connection. Returns the Result and the response message.
 // Sets all times in the Result object.
-func MeasureLatencyJSON(url string, v interface{}) (Result, interface{}, error) {
+func MeasureLatencyJSON(url *url.URL, v interface{}) (Result, interface{}, error) {
 	ws := NewWSStat()
 	if err := ws.Dial(url); err != nil {
 		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
@@ -322,7 +323,7 @@ func MeasureLatencyJSON(url string, v interface{}) (Result, interface{}, error) 
 // MeasureLatencyPing establishes a WebSocket connection, sends a ping message, awaits the pong response,
 // and closes the connection. Returns the Result.
 // Sets all times in the Result object.
-func MeasureLatencyPing(url string) (Result, error) {
+func MeasureLatencyPing(url *url.URL) (Result, error) {
 	ws := NewWSStat()
 	if err := ws.Dial(url); err != nil {
 		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
