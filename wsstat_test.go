@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -16,9 +17,17 @@ import (
 
 var (	
 	serverAddr = "localhost:8080"
-	echoServerAddrWs = "ws://" + serverAddr + "/echo"
-	// TODO: support wss in tests
+	echoServerAddrWs *url.URL
+		// TODO: support wss in tests
 )
+
+func init() {
+	var err error
+	echoServerAddrWs, err = url.Parse("ws://" + serverAddr + "/echo")
+	if err != nil {
+		log.Fatalf("Failed to parse URL: %v", err)
+	}
+}
 
 // TestMain sets up the test server and runs the tests in this file.
 func TestMain(m *testing.M) {
@@ -249,25 +258,25 @@ func startEchoServer(addr string) {
 }
 
 // Validation of WSStat results after Dial has been called
-func validateDialResult(ws *WSStat, url string, msg string, t *testing.T) {
+func validateDialResult(ws *WSStat, url *url.URL, msg string, t *testing.T) {
 	if ws.Result.DNSLookup <= 0 {
-		t.Errorf("Invalid WSHandshake time in %s", msg)
+		t.Errorf("Invalid DNSLookup time in %s", msg)
 	}
 	if ws.Result.DNSLookupDone <= 0 {
-		t.Errorf("Invalid WSHandshakeDone time in %s", msg)
+		t.Errorf("Invalid DNSLookupDone time in %s", msg)
 	}
 	if ws.Result.TCPConnection <= 0 {
-		t.Errorf("Invalid WSHandshake time in %s", msg)
+		t.Errorf("Invalid TCPConnection time in %s", msg)
 	}
 	if ws.Result.TCPConnected <= 0 {
-		t.Errorf("Invalid WSHandshakeDone time in %s", msg)
+		t.Errorf("Invalid TCPConnected time in %s", msg)
 	}
-	if strings.Contains(url, "wss://") {
+	if strings.Contains(url.String(), "wss://") {
 		if ws.Result.TLSHandshake <= 0 {
-			t.Errorf("Invalid WSHandshake time in %s", msg)
+			t.Errorf("Invalid TLSHandshake time in %s", msg)
 		}
 		if ws.Result.TLSHandshakeDone <= 0 {
-			t.Errorf("Invalid WSHandshakeDone time in %s", msg)
+			t.Errorf("Invalid TLSHandshakeDone time in %s", msg)
 		}
 	}
 	if ws.Result.WSHandshake <= 0 {
