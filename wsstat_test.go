@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog"
 )
 
 var (	
@@ -27,6 +28,9 @@ func init() {
 	if err != nil {
 		log.Fatalf("Failed to parse URL: %v", err)
 	}
+
+	// Inactivate debug logging for tests
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
 // TestMain sets up the test server and runs the tests in this file.
