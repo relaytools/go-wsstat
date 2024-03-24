@@ -12,11 +12,16 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog"
 )
+
+// Package-specific logger, defaults to Info level
+var logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().Logger()
 
 // Result holds durations of each phase of a WebSocket connection
 // and cumulative durations over the connection timeline.
@@ -132,6 +137,7 @@ func (ws *WSStat) SendMessage(messageType int, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug().Bytes("Response", p).Msg("Received message")
 	ws.Result.MessageRoundTrip = time.Since(start)
 	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
 	return p, nil
@@ -163,7 +169,7 @@ func (ws *WSStat) SendMessageJSON(v interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	//log.Printf("Received message: %s", resp)
+	logger.Debug().Interface("Response", resp).Msg("Received message")
 	ws.Result.MessageRoundTrip = time.Since(start)
 	ws.Result.FirstMessageResponse = ws.Result.WSHandshakeDone + ws.Result.MessageRoundTrip
 	return resp, nil
@@ -285,17 +291,17 @@ func (r Result) Format(s fmt.State, verb rune) {
 func MeasureLatency(url *url.URL, msg string) (Result, []byte, error) {
 	ws := NewWSStat()
 	if err := ws.Dial(url); err != nil {
-		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
+		logger.Debug().Err(err).Msg("Failed to establish WebSocket connection")
 		return Result{}, nil, err
 	}
 	start, err := ws.WriteMessage(websocket.TextMessage, []byte(msg))
 	if err != nil {
-		fmt.Printf("Failed to write message: %v\n", err)
+		logger.Debug().Err(err).Msg("Failed to write message")
 		return Result{}, nil, err
 	}
 	_, p, err := ws.ReadMessage(start)
 	if err != nil {
-		fmt.Printf("Failed to read message: %v\n", err)
+		logger.Debug().Err(err).Msg("Failed to read message")
 		return Result{}, nil, err
 	}
 	ws.CloseConn()
@@ -308,12 +314,12 @@ func MeasureLatency(url *url.URL, msg string) (Result, []byte, error) {
 func MeasureLatencyJSON(url *url.URL, v interface{}) (Result, interface{}, error) {
 	ws := NewWSStat()
 	if err := ws.Dial(url); err != nil {
-		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
+		logger.Debug().Err(err).Msg("Failed to establish WebSocket connection")
 		return Result{}, nil, err
 	}
 	p, err := ws.SendMessageJSON(v)
 	if err != nil {
-		fmt.Printf("Failed to send message: %v\n", err)
+		logger.Debug().Err(err).Msg("Failed to send message")
 		return Result{}, nil, err
 	}
 	ws.CloseConn()
@@ -326,12 +332,12 @@ func MeasureLatencyJSON(url *url.URL, v interface{}) (Result, interface{}, error
 func MeasureLatencyPing(url *url.URL) (Result, error) {
 	ws := NewWSStat()
 	if err := ws.Dial(url); err != nil {
-		fmt.Printf("Failed to establish WebSocket connection: %v\n", err)
+		logger.Debug().Err(err).Msg("Failed to establish WebSocket connection")
 		return Result{}, err
 	}
 	err := ws.SendPing()
 	if err != nil {
-		fmt.Print("Failed to send ping", err)
+		logger.Debug().Err(err).Msg("Failed to send ping")
 		return Result{}, err
 	}
 	ws.CloseConn()
@@ -419,4 +425,14 @@ func NewWSStat() *WSStat {
     }
 
     return ws
+}
+
+// SetLogLevel sets the log level for WSStat.
+func SetLogLevel(level zerolog.Level) {
+	logger = logger.Level(level)
+}
+
+// SetLogger sets the logger for WSStat.
+func SetLogger(l zerolog.Logger) {
+	logger = l
 }

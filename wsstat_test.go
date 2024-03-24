@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog"
 )
 
 var (	
@@ -27,6 +28,9 @@ func init() {
 	if err != nil {
 		log.Fatalf("Failed to parse URL: %v", err)
 	}
+
+	// Set log level to debug for the tests
+	SetLogLevel(zerolog.DebugLevel)
 }
 
 // TestMain sets up the test server and runs the tests in this file.
@@ -210,6 +214,38 @@ func TestSendMessageJSON(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	validateCloseResult(ws, getFunctionName(), t)
+}
+
+func TestLoggerFunctionality(t *testing.T) {
+	// Set custom logger with buffer as output
+	var buf bytes.Buffer
+	customLogger := zerolog.New(&buf).Level(zerolog.InfoLevel).With().Timestamp().Logger()
+	SetLogger(customLogger)
+
+	// Test log level Info
+	logger.Info().Msg("info message")
+	if !bytes.Contains(buf.Bytes(), []byte("info message")) {
+		t.Error("Expected info level log")
+	}
+	buf.Reset() // Clear buffer
+
+	// Test log level Debug
+	SetLogLevel(zerolog.DebugLevel)
+	logger.Debug().Msg("debug message")
+	if !bytes.Contains(buf.Bytes(), []byte("debug message")) {
+		t.Error("Expected debug level log")
+	}
+	buf.Reset() // Clear buffer
+
+	// Return log level to Info and confirm debug messages are not logged
+	SetLogLevel(zerolog.InfoLevel)
+	logger.Debug().Msg("another debug message")
+	if bytes.Contains(buf.Bytes(), []byte("another debug message")) {
+		t.Error("Did not expect debug level log")
+	}
+
+	// Restore original logger to avoid affecting other tests
+	logger = zerolog.New(os.Stderr).Level(zerolog.DebugLevel).With().Timestamp().Logger()
 }
 
 
