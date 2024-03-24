@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/gorilla/websocket"
@@ -14,7 +15,12 @@ func main() {
 	if len(args) < 2 {
 		log.Fatalf("Usage: go run main.go URL")
 	}
-    url := args[1]
+    rawUrl := args[1]
+
+	url, err := url.Parse(rawUrl)
+	if err != nil {
+		log.Fatalf("Failed to parse URL: %v", err)
+	}
 
 	basicExample(url)
 	detailedExample(url)
@@ -22,7 +28,7 @@ func main() {
 
 // This example demonstrates how to measure the latency of a WebSocket connection
 // with a single function call.
-func basicExample(url string) {
+func basicExample(url *url.URL) {
 	fmt.Print("> Running basic example\n")
 	// Measure with a text message
 	var msg = "Hello, WebSocket!"
@@ -39,7 +45,7 @@ func basicExample(url string) {
 
 // This example demonstrates how to measure the latency of a WebSocket connection
 // with more control over the steps in the process.
-func detailedExample(wsURL string) {
+func detailedExample(url *url.URL) {
 	fmt.Print("> Running detailed example\n")
 	var err error
 
@@ -48,7 +54,7 @@ func detailedExample(wsURL string) {
 
 	// 2. Establish a WebSocket connection
 	// This triggers the DNS lookup, TCP connection, TLS handshake, and WebSocket handshake timers
-	if err := ws.Dial(wsURL); err != nil {
+	if err := ws.Dial(url); err != nil {
 		log.Fatalf("Failed to establish WebSocket connection: %v", err)
 	}
 
