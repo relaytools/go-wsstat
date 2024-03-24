@@ -20,8 +20,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Package-specific logger
-var logger = zerolog.New(os.Stderr).Level(zerolog.DebugLevel).With().Timestamp().Logger()
+// Package-specific logger, defaults to Info level
+var logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().Logger()
 
 // Result holds durations of each phase of a WebSocket connection
 // and cumulative durations over the connection timeline.

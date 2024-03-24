@@ -29,8 +29,8 @@ func init() {
 		log.Fatalf("Failed to parse URL: %v", err)
 	}
 
-	// Inactivate debug logging for tests
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	// Set log level to debug for the tests
+	SetLogLevel(zerolog.DebugLevel)
 }
 
 // TestMain sets up the test server and runs the tests in this file.
@@ -217,9 +217,6 @@ func TestSendMessageJSON(t *testing.T) {
 }
 
 func TestLoggerFunctionality(t *testing.T) {
-	// Set log level to Debug for this test
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-
 	// Set custom logger with buffer as output
 	var buf bytes.Buffer
 	customLogger := zerolog.New(&buf).Level(zerolog.InfoLevel).With().Timestamp().Logger()
@@ -248,7 +245,6 @@ func TestLoggerFunctionality(t *testing.T) {
 	}
 
 	// Restore original logger to avoid affecting other tests
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	logger = zerolog.New(os.Stderr).Level(zerolog.DebugLevel).With().Timestamp().Logger()
 }
 
