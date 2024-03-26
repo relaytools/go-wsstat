@@ -42,8 +42,10 @@ type Result struct {
 	FirstMessageResponse time.Duration // Time until the first message is received
 	TotalTime            time.Duration // Total time from opening to closing the connection
 
-	RequestHeaders  http.Header // Headers of the initial request
-    ResponseHeaders http.Header // Headers of the response
+	// Other connection details
+	RequestHeaders  http.Header          // Headers of the initial request
+    ResponseHeaders http.Header          // Headers of the response
+	TLSState        tls.ConnectionState // State of the TLS connection
 }
 
 // WSStat wraps the gorilla/websocket package and includes latency measurements in Result.
@@ -411,6 +413,8 @@ func newDialer(result *Result) *websocket.Dialer {
 				return nil, err
 			}
 			result.TLSHandshake = time.Since(tlsStart)
+			//state := tlsConn.ConnectionState() // TODO: remove
+			result.TLSState = tlsConn.ConnectionState()
 
 			// Record the results
 			result.DNSLookupDone = result.DNSLookup
