@@ -281,6 +281,7 @@ func (r Result) Format(s fmt.State, verb rune) {
 				fmt.Fprintf(s, "  Version: %s\n", tls.VersionName(r.TLSState.Version))
 				fmt.Fprintf(s, "  Cipher Suite: %s\n", tls.CipherSuiteName(r.TLSState.CipherSuite))
 				fmt.Fprintf(s, "  Server Name: %s\n", r.TLSState.ServerName)
+				fmt.Fprintf(s, "  Handshake Complete: %t\n", r.TLSState.HandshakeComplete)
 
 				for i, cert := range r.CertificateDetails() {
 					fmt.Fprintf(s, "Certificate %d:\n", i+1)
