@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +30,8 @@ type CertificateDetails struct {
     Issuer     string
     NotBefore  time.Time
     NotAfter   time.Time
+	PublicKeyAlgorithm x509.PublicKeyAlgorithm
+	SignatureAlgorithm x509.SignatureAlgorithm
 	DNSNames       []string
 	IPAddresses    []net.IP
 	URIs           []*url.URL
@@ -257,6 +260,8 @@ func (r *Result) CertificateDetails() []CertificateDetails {
             Issuer:      cert.Issuer.CommonName,
             NotBefore:   cert.NotBefore,
             NotAfter:    cert.NotAfter,
+			PublicKeyAlgorithm: cert.PublicKeyAlgorithm,
+			SignatureAlgorithm: cert.SignatureAlgorithm,
 			DNSNames:    cert.DNSNames,
 			IPAddresses: cert.IPAddresses,
 			URIs:        cert.URIs,
@@ -276,13 +281,14 @@ func (r Result) Format(s fmt.State, verb rune) {
 				fmt.Fprintf(s, "  Cipher Suite: %s\n", tls.CipherSuiteName(r.TLSState.CipherSuite))
 				fmt.Fprintf(s, "  Server Name: %s\n", r.TLSState.ServerName)
 
-				// TODO: re-acivate after deciding what to print from certificates
 				for i, cert := range r.CertificateDetails() {
 					fmt.Fprintf(s, "Certificate %d:\n", i+1)
 					fmt.Fprintf(s, "  Common Name: %s\n", cert.CommonName)
 					fmt.Fprintf(s, "  Issuer: %s\n", cert.Issuer)
 					fmt.Fprintf(s, "  Not Before: %s\n", cert.NotBefore)
 					fmt.Fprintf(s, "  Not After: %s\n", cert.NotAfter)
+					fmt.Fprintf(s, "  Public Key Algorithm: %s\n", cert.PublicKeyAlgorithm.String())
+					fmt.Fprintf(s, "  Signature Algorithm: %s\n", cert.SignatureAlgorithm.String())
 					fmt.Fprintf(s, "  DNS Names: %v\n", cert.DNSNames)
 					fmt.Fprintf(s, "  IP Addresses: %v\n", cert.IPAddresses)
 					fmt.Fprintf(s, "  URIs: %v\n", cert.URIs)
