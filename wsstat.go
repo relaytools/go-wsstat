@@ -29,6 +29,9 @@ type CertificateDetails struct {
     Issuer     string
     NotBefore  time.Time
     NotAfter   time.Time
+	DNSNames       []string
+	IPAddresses    []net.IP
+	URIs           []*url.URL
     // TODO: investigate other fields to add to this struct
 }
 
@@ -250,11 +253,13 @@ func (r *Result) CertificateDetails() []CertificateDetails {
     var details []CertificateDetails
     for _, cert := range r.TLSState.PeerCertificates {
         details = append(details, CertificateDetails{
-            CommonName: cert.Subject.CommonName,
-            Issuer:     cert.Issuer.CommonName,
-            NotBefore:  cert.NotBefore,
-            NotAfter:   cert.NotAfter,
-            // Add other fields as needed
+            CommonName:  cert.Subject.CommonName,
+            Issuer:      cert.Issuer.CommonName,
+            NotBefore:   cert.NotBefore,
+            NotAfter:    cert.NotAfter,
+			DNSNames:    cert.DNSNames,
+			IPAddresses: cert.IPAddresses,
+			URIs:        cert.URIs,
         })
     }
     return details
@@ -265,6 +270,32 @@ func (r Result) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
+			if r.TLSState != nil {
+				fmt.Fprintf(s, "TLS handshake details:\n")
+				fmt.Fprintf(s, "  Version: %s\n\n", tls.VersionName(r.TLSState.Version))
+
+				fmt.Fprintf(s, "Request headers:\n")
+				for k, v := range r.RequestHeaders {
+					fmt.Fprintf(s, "  %s: %s\n", k, v)
+				}
+				fmt.Fprintf(s, "Response headers:\n")
+				for k, v := range r.ResponseHeaders {
+					fmt.Fprintf(s, "  %s: %s\n", k, v)
+				}
+				fmt.Fprintln(s)
+				// TODO: re-acivate after deciding what to print from certificates
+				/* for i, cert := range r.CertificateDetails() {
+					fmt.Fprintf(s, "Certificate %d:\n", i+1)
+					fmt.Fprintf(s, "  Common Name: %s\n", cert.CommonName)
+					fmt.Fprintf(s, "  Issuer: %s\n", cert.Issuer)
+					fmt.Fprintf(s, "  Not Before: %s\n", cert.NotBefore)
+					fmt.Fprintf(s, "  Not After: %s\n", cert.NotAfter)
+					fmt.Fprintf(s, "  DNS Names: %v\n", cert.DNSNames)
+					fmt.Fprintf(s, "  IP Addresses: %v\n", cert.IPAddresses)
+					fmt.Fprintf(s, "  URIs: %v\n", cert.URIs)
+				} */
+			}
+
 			var buf bytes.Buffer
 			fmt.Fprintf(&buf, "DNS lookup:     %4d ms\n",
 				int(r.DNSLookup/time.Millisecond))
