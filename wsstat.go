@@ -41,6 +41,9 @@ type Result struct {
 	WSHandshakeDone      time.Duration // Time until the WS handshake is completed
 	FirstMessageResponse time.Duration // Time until the first message is received
 	TotalTime            time.Duration // Total time from opening to closing the connection
+
+	RequestHeaders  http.Header // Headers of the initial request
+    ResponseHeaders http.Header // Headers of the response
 }
 
 // WSStat wraps the gorilla/websocket package and includes latency measurements in Result.
@@ -83,7 +86,7 @@ func (ws *WSStat) Dial(url *url.URL) error {
 	// TODO: figure out if these headers are enough, and also if they need to be customizable
 	headers := http.Header{}
 	headers.Add("Origin", "http://example.com")
-	conn, _, err := ws.dialer.Dial(url.String(), headers)
+	conn, resp, err := ws.dialer.Dial(url.String(), headers)
 	if err != nil {
 		return err
 	}
@@ -91,6 +94,11 @@ func (ws *WSStat) Dial(url *url.URL) error {
 	ws.conn = conn
 	ws.Result.WSHandshake = totalDialDuration - ws.Result.TLSHandshakeDone
 	ws.Result.WSHandshakeDone = totalDialDuration
+
+	// Capture request and response headers
+	ws.Result.RequestHeaders = headers // TODO: captures set headers, to capture all some modifications are needed
+	ws.Result.ResponseHeaders = resp.Header
+
 	return nil
 }
 
