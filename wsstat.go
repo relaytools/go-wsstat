@@ -59,7 +59,7 @@ type Result struct {
 
 	// Other connection details
 	RequestHeaders  http.Header          // Headers of the initial request
-    ResponseHeaders http.Header          // Headers of the response
+	ResponseHeaders http.Header          // Headers of the response
 	TLSState        *tls.ConnectionState // State of the TLS connection
 }
 
