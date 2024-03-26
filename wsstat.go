@@ -23,6 +23,15 @@ import (
 // Package-specific logger, defaults to Info level
 var logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().Logger()
 
+// CertificateDetail holds details regaridng a certificate.
+type CertificateDetails struct {
+    CommonName string
+    Issuer     string
+    NotBefore  time.Time
+    NotAfter   time.Time
+    // TODO: investigate other fields to add to this struct
+}
+
 // Result holds durations of each phase of a WebSocket connection
 // and cumulative durations over the connection timeline.
 type Result struct {
@@ -45,7 +54,7 @@ type Result struct {
 	// Other connection details
 	RequestHeaders  http.Header          // Headers of the initial request
     ResponseHeaders http.Header          // Headers of the response
-	TLSState        tls.ConnectionState // State of the TLS connection
+	TLSState        *tls.ConnectionState // State of the TLS connection
 }
 
 // WSStat wraps the gorilla/websocket package and includes latency measurements in Result.
@@ -234,6 +243,23 @@ func (r *Result) durations() map[string]time.Duration {
 	}
 }
 
+func (r *Result) CertificateDetails() []CertificateDetails {
+    if r.TLSState == nil {
+        return nil
+    }
+    var details []CertificateDetails
+    for _, cert := range r.TLSState.PeerCertificates {
+        details = append(details, CertificateDetails{
+            CommonName: cert.Subject.CommonName,
+            Issuer:     cert.Issuer.CommonName,
+            NotBefore:  cert.NotBefore,
+            NotAfter:   cert.NotAfter,
+            // Add other fields as needed
+        })
+    }
+    return details
+}
+
 // Format formats the time.Duration members of Result.
 func (r Result) Format(s fmt.State, verb rune) {
 	switch verb {
@@ -413,8 +439,8 @@ func newDialer(result *Result) *websocket.Dialer {
 				return nil, err
 			}
 			result.TLSHandshake = time.Since(tlsStart)
-			//state := tlsConn.ConnectionState() // TODO: remove
-			result.TLSState = tlsConn.ConnectionState()
+			state := tlsConn.ConnectionState()
+			result.TLSState = &state
 
 			// Record the results
 			result.DNSLookupDone = result.DNSLookup
