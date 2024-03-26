@@ -27,7 +27,7 @@ var logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().
 // CertificateDetail holds details regaridng a certificate.
 type CertificateDetails struct {
     CommonName string
-    Issuer     string
+	Issuer     string
     NotBefore  time.Time
     NotAfter   time.Time
 	PublicKeyAlgorithm x509.PublicKeyAlgorithm
@@ -35,7 +35,6 @@ type CertificateDetails struct {
 	DNSNames       []string
 	IPAddresses    []net.IP
 	URIs           []*url.URL
-    // TODO: investigate other fields to add to this struct
 }
 
 // Result holds durations of each phase of a WebSocket connection
