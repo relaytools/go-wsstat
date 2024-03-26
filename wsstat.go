@@ -249,6 +249,7 @@ func (r *Result) durations() map[string]time.Duration {
 	}
 }
 
+// CertificateDetails returns a slice of CertificateDetails for each certificate in the TLS connection.
 func (r *Result) CertificateDetails() []CertificateDetails {
     if r.TLSState == nil {
         return nil
