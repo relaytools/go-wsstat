@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -22,6 +23,19 @@ import (
 
 // Package-specific logger, defaults to Info level
 var logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().Logger()
+
+// CertificateDetail holds details regaridng a certificate.
+type CertificateDetails struct {
+	CommonName string
+	Issuer     string
+	NotBefore  time.Time
+	NotAfter   time.Time
+	PublicKeyAlgorithm x509.PublicKeyAlgorithm
+	SignatureAlgorithm x509.SignatureAlgorithm
+	DNSNames       []string
+	IPAddresses    []net.IP
+	URIs           []*url.URL
+}
 
 // Result holds durations of each phase of a WebSocket connection
 // and cumulative durations over the connection timeline.
@@ -41,6 +55,11 @@ type Result struct {
 	WSHandshakeDone      time.Duration // Time until the WS handshake is completed
 	FirstMessageResponse time.Duration // Time until the first message is received
 	TotalTime            time.Duration // Total time from opening to closing the connection
+
+	// Other connection details
+	RequestHeaders  http.Header          // Headers of the initial request
+	ResponseHeaders http.Header          // Headers of the response
+	TLSState        *tls.ConnectionState // State of the TLS connection
 }
 
 // WSStat wraps the gorilla/websocket package and includes latency measurements in Result.
@@ -83,7 +102,7 @@ func (ws *WSStat) Dial(url *url.URL) error {
 	// TODO: figure out if these headers are enough, and also if they need to be customizable
 	headers := http.Header{}
 	headers.Add("Origin", "http://example.com")
-	conn, _, err := ws.dialer.Dial(url.String(), headers)
+	conn, resp, err := ws.dialer.Dial(url.String(), headers)
 	if err != nil {
 		return err
 	}
@@ -91,6 +110,11 @@ func (ws *WSStat) Dial(url *url.URL) error {
 	ws.conn = conn
 	ws.Result.WSHandshake = totalDialDuration - ws.Result.TLSHandshakeDone
 	ws.Result.WSHandshakeDone = totalDialDuration
+
+	// Capture request and response headers
+	ws.Result.RequestHeaders = headers // TODO: captures set headers, to capture all some modifications are needed
+	ws.Result.ResponseHeaders = resp.Header
+
 	return nil
 }
 
@@ -224,11 +248,69 @@ func (r *Result) durations() map[string]time.Duration {
 	}
 }
 
+// CertificateDetails returns a slice of CertificateDetails for each certificate in the TLS connection.
+func (r *Result) CertificateDetails() []CertificateDetails {
+    if r.TLSState == nil {
+        return nil
+    }
+    var details []CertificateDetails
+    for _, cert := range r.TLSState.PeerCertificates {
+        details = append(details, CertificateDetails{
+			CommonName:  cert.Subject.CommonName,
+			Issuer:      cert.Issuer.CommonName,
+			NotBefore:   cert.NotBefore,
+			NotAfter:    cert.NotAfter,
+			PublicKeyAlgorithm: cert.PublicKeyAlgorithm,
+			SignatureAlgorithm: cert.SignatureAlgorithm,
+			DNSNames:    cert.DNSNames,
+			IPAddresses: cert.IPAddresses,
+			URIs:        cert.URIs,
+        })
+    }
+    return details
+}
+
 // Format formats the time.Duration members of Result.
 func (r Result) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
+			if r.TLSState != nil {
+				fmt.Fprintf(s, "TLS handshake details:\n")
+				fmt.Fprintf(s, "  Version: %s\n", tls.VersionName(r.TLSState.Version))
+				fmt.Fprintf(s, "  Cipher Suite: %s\n", tls.CipherSuiteName(r.TLSState.CipherSuite))
+				fmt.Fprintf(s, "  Server Name: %s\n", r.TLSState.ServerName)
+				fmt.Fprintf(s, "  Handshake Complete: %t\n", r.TLSState.HandshakeComplete)
+
+				for i, cert := range r.CertificateDetails() {
+					fmt.Fprintf(s, "Certificate %d:\n", i+1)
+					fmt.Fprintf(s, "  Common Name: %s\n", cert.CommonName)
+					fmt.Fprintf(s, "  Issuer: %s\n", cert.Issuer)
+					fmt.Fprintf(s, "  Not Before: %s\n", cert.NotBefore)
+					fmt.Fprintf(s, "  Not After: %s\n", cert.NotAfter)
+					fmt.Fprintf(s, "  Public Key Algorithm: %s\n", cert.PublicKeyAlgorithm.String())
+					fmt.Fprintf(s, "  Signature Algorithm: %s\n", cert.SignatureAlgorithm.String())
+					fmt.Fprintf(s, "  DNS Names: %v\n", cert.DNSNames)
+					fmt.Fprintf(s, "  IP Addresses: %v\n", cert.IPAddresses)
+					fmt.Fprintf(s, "  URIs: %v\n", cert.URIs)
+				}
+				fmt.Fprintln(s)
+			}
+
+			if r.RequestHeaders != nil {
+				fmt.Fprintf(s, "Request headers:\n")
+				for k, v := range r.RequestHeaders {
+					fmt.Fprintf(s, "  %s: %s\n", k, v)
+				}
+			}
+			if r.ResponseHeaders != nil {
+				fmt.Fprintf(s, "Response headers:\n")
+				for k, v := range r.ResponseHeaders {
+					fmt.Fprintf(s, "  %s: %s\n", k, v)
+				}
+			}
+			fmt.Fprintln(s)
+
 			var buf bytes.Buffer
 			fmt.Fprintf(&buf, "DNS lookup:     %4d ms\n",
 				int(r.DNSLookup/time.Millisecond))
@@ -403,6 +485,8 @@ func newDialer(result *Result) *websocket.Dialer {
 				return nil, err
 			}
 			result.TLSHandshake = time.Since(tlsStart)
+			state := tlsConn.ConnectionState()
+			result.TLSState = &state
 
 			// Record the results
 			result.DNSLookupDone = result.DNSLookup
@@ -414,16 +498,15 @@ func newDialer(result *Result) *websocket.Dialer {
 	}
 }
 
-// NewWSStat creates a new WSStat instance and establishes a WebSocket connection.
+// NewWSStat creates and returns a new WSStat instance.
 func NewWSStat() *WSStat {
     result := &Result{}
-	dialer := newDialer(result) // Use the custom dialer we defined
+	dialer := newDialer(result)
 
     ws := &WSStat{
         dialer: dialer,
 		Result: result,
     }
-
     return ws
 }
 
