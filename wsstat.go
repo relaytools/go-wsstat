@@ -422,16 +422,15 @@ func newDialer(result *Result) *websocket.Dialer {
 	}
 }
 
-// NewWSStat creates a new WSStat instance and establishes a WebSocket connection.
+// NewWSStat creates and returns a new WSStat instance.
 func NewWSStat() *WSStat {
     result := &Result{}
-	dialer := newDialer(result) // Use the custom dialer we defined
+	dialer := newDialer(result)
 
     ws := &WSStat{
         dialer: dialer,
 		Result: result,
     }
-
     return ws
 }
 
