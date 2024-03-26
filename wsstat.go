@@ -26,10 +26,10 @@ var logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().
 
 // CertificateDetail holds details regaridng a certificate.
 type CertificateDetails struct {
-    CommonName string
+	CommonName string
 	Issuer     string
-    NotBefore  time.Time
-    NotAfter   time.Time
+	NotBefore  time.Time
+	NotAfter   time.Time
 	PublicKeyAlgorithm x509.PublicKeyAlgorithm
 	SignatureAlgorithm x509.SignatureAlgorithm
 	DNSNames       []string
