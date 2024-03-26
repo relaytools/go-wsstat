@@ -256,10 +256,10 @@ func (r *Result) CertificateDetails() []CertificateDetails {
     var details []CertificateDetails
     for _, cert := range r.TLSState.PeerCertificates {
         details = append(details, CertificateDetails{
-            CommonName:  cert.Subject.CommonName,
-            Issuer:      cert.Issuer.CommonName,
-            NotBefore:   cert.NotBefore,
-            NotAfter:    cert.NotAfter,
+			CommonName:  cert.Subject.CommonName,
+			Issuer:      cert.Issuer.CommonName,
+			NotBefore:   cert.NotBefore,
+			NotAfter:    cert.NotAfter,
 			PublicKeyAlgorithm: cert.PublicKeyAlgorithm,
 			SignatureAlgorithm: cert.SignatureAlgorithm,
 			DNSNames:    cert.DNSNames,
