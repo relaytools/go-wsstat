@@ -272,19 +272,12 @@ func (r Result) Format(s fmt.State, verb rune) {
 		if s.Flag('+') {
 			if r.TLSState != nil {
 				fmt.Fprintf(s, "TLS handshake details:\n")
-				fmt.Fprintf(s, "  Version: %s\n\n", tls.VersionName(r.TLSState.Version))
+				fmt.Fprintf(s, "  Version: %s\n", tls.VersionName(r.TLSState.Version))
+				fmt.Fprintf(s, "  Cipher Suite: %s\n", tls.CipherSuiteName(r.TLSState.CipherSuite))
+				fmt.Fprintf(s, "  Server Name: %s\n", r.TLSState.ServerName)
 
-				fmt.Fprintf(s, "Request headers:\n")
-				for k, v := range r.RequestHeaders {
-					fmt.Fprintf(s, "  %s: %s\n", k, v)
-				}
-				fmt.Fprintf(s, "Response headers:\n")
-				for k, v := range r.ResponseHeaders {
-					fmt.Fprintf(s, "  %s: %s\n", k, v)
-				}
-				fmt.Fprintln(s)
 				// TODO: re-acivate after deciding what to print from certificates
-				/* for i, cert := range r.CertificateDetails() {
+				for i, cert := range r.CertificateDetails() {
 					fmt.Fprintf(s, "Certificate %d:\n", i+1)
 					fmt.Fprintf(s, "  Common Name: %s\n", cert.CommonName)
 					fmt.Fprintf(s, "  Issuer: %s\n", cert.Issuer)
@@ -293,8 +286,23 @@ func (r Result) Format(s fmt.State, verb rune) {
 					fmt.Fprintf(s, "  DNS Names: %v\n", cert.DNSNames)
 					fmt.Fprintf(s, "  IP Addresses: %v\n", cert.IPAddresses)
 					fmt.Fprintf(s, "  URIs: %v\n", cert.URIs)
-				} */
+				}
+				fmt.Fprintln(s)
 			}
+
+			if r.RequestHeaders != nil {
+				fmt.Fprintf(s, "Request headers:\n")
+				for k, v := range r.RequestHeaders {
+					fmt.Fprintf(s, "  %s: %s\n", k, v)
+				}
+			}
+			if r.ResponseHeaders != nil {
+				fmt.Fprintf(s, "Response headers:\n")
+				for k, v := range r.ResponseHeaders {
+					fmt.Fprintf(s, "  %s: %s\n", k, v)
+				}
+			}
+			fmt.Fprintln(s)
 
 			var buf bytes.Buffer
 			fmt.Fprintf(&buf, "DNS lookup:     %4d ms\n",
