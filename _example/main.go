@@ -49,8 +49,21 @@ func detailedExample(url *url.URL) {
 	fmt.Print("> Running detailed example\n")
 	var err error
 
-	// 1. Create a new WSStat instance
+	// 1.a. Create a new WSStat instance
     ws := wsstat.NewWSStat()
+	// 1.b. Load custom CA certificate if required
+	/* caCert, err := ioutil.ReadFile("path/to/ca.cert")
+	if err != nil {
+		log.Fatal(err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	// Set up custom TLS configuration
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+		// Further configuration as needed...
+	}
+	wsstat.SetCustomTLSConfig(tlsConfig) */
 
 	// 2. Establish a WebSocket connection
 	// This triggers the DNS lookup, TCP connection, TLS handshake, and WebSocket handshake timers
