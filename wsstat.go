@@ -107,9 +107,8 @@ func (ws *WSStat) CloseConn() error {
 // Sets result times: WSHandshake, WSHandshakeDone
 func (ws *WSStat) Dial(url *url.URL) error {
 	start := time.Now()
-	// TODO: figure out if these headers are enough, and also if they need to be customizable
 	headers := http.Header{}
-	headers.Add("Origin", "http://example.com")
+	headers.Add("Origin", "http://example.com") // Add as default header, required by some servers
 	conn, resp, err := ws.dialer.Dial(url.String(), headers)
 	if err != nil {
 		return err
@@ -120,7 +119,20 @@ func (ws *WSStat) Dial(url *url.URL) error {
 	ws.Result.WSHandshakeDone = totalDialDuration
 
 	// Capture request and response headers
-	ws.Result.RequestHeaders = headers // TODO: captures set headers, to capture all some modifications are needed
+	// documentedDefaultHeaders lists the known headers that Gorilla WebSocket sets by default.
+	var documentedDefaultHeaders = map[string][]string{
+		"Upgrade": {"websocket"},        // Constant value
+		"Connection": {"Upgrade"},       // Constant value
+		"Sec-WebSocket-Key": {"<hidden>"},       // A nonce value; dynamically generated for each request
+		"Sec-WebSocket-Version": {"13"}, // Constant value
+		// "Sec-WebSocket-Protocol",     // Also set by gorilla/websocket, but only if subprotocols are specified
+	}
+	// Merge custom headers
+    for name, values := range documentedDefaultHeaders {
+		headers[name] = values
+    }
+	// TODO: also add option for custom request headers
+	ws.Result.RequestHeaders = headers
 	ws.Result.ResponseHeaders = resp.Header
 
 	return nil
