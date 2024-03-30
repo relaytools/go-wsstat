@@ -104,11 +104,15 @@ func (ws *WSStat) CloseConn() error {
 }
 
 // Dial establishes a new WebSocket connection using the custom dialer defined in this package.
+// If required, specify custom headers to merge with the default headers.
 // Sets result times: WSHandshake, WSHandshakeDone
-func (ws *WSStat) Dial(url *url.URL) error {
+func (ws *WSStat) Dial(url *url.URL, customHeaders http.Header) error {
 	start := time.Now()
 	headers := http.Header{}
 	headers.Add("Origin", "http://example.com") // Add as default header, required by some servers
+	for name, values := range customHeaders {
+		headers[name] = values
+	}
 	conn, resp, err := ws.dialer.Dial(url.String(), headers)
 	if err != nil {
 		return err
@@ -388,9 +392,9 @@ func (r Result) Format(s fmt.State, verb rune) {
 // MeasureLatency establishes a WebSocket connection, sends a message, reads the response,
 // and closes the connection. Returns the Result and the response message.
 // Sets all times in the Result object.
-func MeasureLatency(url *url.URL, msg string) (Result, []byte, error) {
+func MeasureLatency(url *url.URL, msg string, customHeaders http.Header) (Result, []byte, error) {
 	ws := NewWSStat()
-	if err := ws.Dial(url); err != nil {
+	if err := ws.Dial(url, customHeaders); err != nil {
 		logger.Debug().Err(err).Msg("Failed to establish WebSocket connection")
 		return Result{}, nil, err
 	}
@@ -411,9 +415,9 @@ func MeasureLatency(url *url.URL, msg string) (Result, []byte, error) {
 // MeasureLatencyJSON establishes a WebSocket connection, sends a JSON message, reads the response,
 // and closes the connection. Returns the Result and the response message.
 // Sets all times in the Result object.
-func MeasureLatencyJSON(url *url.URL, v interface{}) (Result, interface{}, error) {
+func MeasureLatencyJSON(url *url.URL, v interface{}, customHeaders http.Header) (Result, interface{}, error) {
 	ws := NewWSStat()
-	if err := ws.Dial(url); err != nil {
+	if err := ws.Dial(url, customHeaders); err != nil {
 		logger.Debug().Err(err).Msg("Failed to establish WebSocket connection")
 		return Result{}, nil, err
 	}
@@ -429,9 +433,9 @@ func MeasureLatencyJSON(url *url.URL, v interface{}) (Result, interface{}, error
 // MeasureLatencyPing establishes a WebSocket connection, sends a ping message, awaits the pong response,
 // and closes the connection. Returns the Result.
 // Sets all times in the Result object.
-func MeasureLatencyPing(url *url.URL) (Result, error) {
+func MeasureLatencyPing(url *url.URL, customHeaders http.Header) (Result, error) {
 	ws := NewWSStat()
-	if err := ws.Dial(url); err != nil {
+	if err := ws.Dial(url, customHeaders); err != nil {
 		logger.Debug().Err(err).Msg("Failed to establish WebSocket connection")
 		return Result{}, err
 	}

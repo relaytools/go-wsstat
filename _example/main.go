@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 
@@ -32,7 +33,7 @@ func basicExample(url *url.URL) {
 	fmt.Print("> Running basic example\n")
 	// Measure with a text message
 	var msg = "Hello, WebSocket!"
-	result, p, _ := wsstat.MeasureLatency(url, msg)
+	result, p, _ := wsstat.MeasureLatency(url, msg, http.Header{})
 	fmt.Printf("Response: %s\n\n", p)
 	// Measure with a JSON message
 	/* var msg = map[string]interface{}{"json": "message", "compatible": "with", "your": "target", "ws": "server"}
@@ -67,7 +68,7 @@ func detailedExample(url *url.URL) {
 
 	// 2. Establish a WebSocket connection
 	// This triggers the DNS lookup, TCP connection, TLS handshake, and WebSocket handshake timers
-	if err := ws.Dial(url); err != nil {
+	if err := ws.Dial(url, http.Header{}); err != nil {
 		log.Fatalf("Failed to establish WebSocket connection: %v", err)
 	}
 

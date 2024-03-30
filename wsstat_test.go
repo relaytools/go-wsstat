@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 
 func TestMeasureLatency(t *testing.T) {
 	msg := "Hello, world!"
-	result, response, err := MeasureLatency(echoServerAddrWs, msg)
+	result, response, err := MeasureLatency(echoServerAddrWs, msg, http.Header{})
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -71,7 +71,7 @@ func TestMeasureLatencyJSON(t *testing.T) {
 	}{
 		Text: "Hello, world!",
 	}
-	result, response, err := MeasureLatencyJSON(echoServerAddrWs, message)
+	result, response, err := MeasureLatencyJSON(echoServerAddrWs, message, http.Header{})
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -93,7 +93,7 @@ func TestMeasureLatencyJSON(t *testing.T) {
 }
 
 func TestMeasureLatencyPing(t *testing.T) {
-	result, err := MeasureLatencyPing(echoServerAddrWs)
+	result, err := MeasureLatencyPing(echoServerAddrWs, http.Header{})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestNewWSStat(t *testing.T) {
 
 func TestDial(t *testing.T) {
 	ws := NewWSStat()
-	err := ws.Dial(echoServerAddrWs)
+	err := ws.Dial(echoServerAddrWs, http.Header{})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestDial(t *testing.T) {
 
 func TestWriteReadClose(t *testing.T) {
 	ws := NewWSStat()
-	err := ws.Dial(echoServerAddrWs)
+	err := ws.Dial(echoServerAddrWs, http.Header{})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestWriteReadClose(t *testing.T) {
 
 func TestSendMessage(t *testing.T) {
 	ws := NewWSStat()
-	err := ws.Dial(echoServerAddrWs)
+	err := ws.Dial(echoServerAddrWs, http.Header{})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestSendMessage(t *testing.T) {
 
 func TestSendMessageJSON(t *testing.T) {
 	ws := NewWSStat()
-	err := ws.Dial(echoServerAddrWs)
+	err := ws.Dial(echoServerAddrWs, http.Header{})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
