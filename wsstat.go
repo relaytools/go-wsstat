@@ -32,7 +32,7 @@ var (
 	customTLSConfig *tls.Config = nil
 )
 
-// CertificateDetail holds details regaridng a certificate.
+// CertificateDetails holds details regarding a certificate.
 type CertificateDetails struct {
 	CommonName string
 	Issuer     string
@@ -45,8 +45,8 @@ type CertificateDetails struct {
 	URIs           []*url.URL
 }
 
-// Result holds durations of each phase of a WebSocket connection
-// and cumulative durations over the connection timeline.
+// Result holds durations of each phase of a WebSocket connection, cumulative durations over
+// the connection timeline, and other relevant connection details.
 type Result struct {
 	// Duration of each phase of the connection
 	DNSLookup        time.Duration // Time to resolve DNS
