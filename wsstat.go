@@ -135,7 +135,6 @@ func (ws *WSStat) Dial(url *url.URL, customHeaders http.Header) error {
     for name, values := range documentedDefaultHeaders {
 		headers[name] = values
     }
-	// TODO: also add option for custom request headers
 	ws.Result.RequestHeaders = headers
 	ws.Result.ResponseHeaders = resp.Header
 
