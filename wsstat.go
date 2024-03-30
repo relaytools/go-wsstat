@@ -21,8 +21,12 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Package-specific logger, defaults to Info level
-var logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().Logger()
+var (
+	// Package-specific logger, defaults to Info level
+	logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().Logger()
+
+	dialTimeout = 3 * time.Second
+)
 
 // CertificateDetail holds details regaridng a certificate.
 type CertificateDetails struct {
@@ -440,8 +444,7 @@ func newDialer(result *Result) *websocket.Dialer {
 
 			// Measure TCP connection time
 			tcpStart := time.Now()
-			// TODO: adjust timeout, possibly move to a configuration
-			conn, err := net.DialTimeout(network, net.JoinHostPort(addrs[0], port), 3*time.Second)
+			conn, err := net.DialTimeout(network, net.JoinHostPort(addrs[0], port), dialTimeout)
 			if err != nil {
 				return nil, err
 			}
@@ -506,6 +509,11 @@ func NewWSStat() *WSStat {
 		Result: result,
     }
     return ws
+}
+
+// SetDialTimeout sets the dial timeout for WSStat.
+func SetDialTimeout(timeout time.Duration) {
+	dialTimeout = timeout
 }
 
 // SetLogLevel sets the log level for WSStat.
