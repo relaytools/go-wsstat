@@ -25,7 +25,11 @@ var (
 	// Package-specific logger, defaults to Info level
 	logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel).With().Timestamp().Logger()
 
+	// Default dial timeout
 	dialTimeout = 3 * time.Second
+
+	// Stores optional user-provided TLS configuration
+	customTLSConfig *tls.Config = nil
 )
 
 // CertificateDetail holds details regaridng a certificate.
@@ -476,10 +480,16 @@ func newDialer(result *Result) *websocket.Dialer {
 			}
 			result.TCPConnection = time.Since(tcpStart)
 
-			// Initiate TLS handshake over the established TCP connection
+			// Set up TLS configuration
+			tlsConfig := customTLSConfig
+			if tlsConfig == nil {
+				// Fall back to a default configuration
+				// Note: the default is an insecure configuration, use with caution
+				tlsConfig = &tls.Config{InsecureSkipVerify: true}
+			}
 			tlsStart := time.Now()
-			// TODO: Ensure proper TLS configuration; this implementation skips certificate verification
-			tlsConn := tls.Client(netConn, &tls.Config{InsecureSkipVerify: true})
+			// Initiate TLS handshake over the established TCP connection
+			tlsConn := tls.Client(netConn, tlsConfig)
 			err = tlsConn.Handshake()
 			if err != nil {
 				netConn.Close()
@@ -509,6 +519,12 @@ func NewWSStat() *WSStat {
 		Result: result,
     }
     return ws
+}
+
+// SetCustomTLSConfig allows users to provide their own TLS configuration.
+// Pass nil to use default settings.
+func SetCustomTLSConfig(config *tls.Config) {
+    customTLSConfig = config
 }
 
 // SetDialTimeout sets the dial timeout for WSStat.
