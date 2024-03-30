@@ -3,11 +3,11 @@
 [godocs]: http://godoc.org/github.com/jakobilobi/go-wsstat
 [license]: /LICENSE
 
-Use the `go-wsstat` Golang package to trace WebSocket connection and latency in your Go applications. It wraps the [gorilla/websocket](https://pkg.go.dev/github.com/gorilla/websocket) package for the actual WebSocket connection implementation, and measures the duration of the different phases of the connection cycle. The program takes inspiration from the [go-httpstat](https://github.com/tcnksm/go-httpstat) package, which is useful for tracing HTTP requests.
+Use the `go-wsstat` Golang package to trace WebSocket connection and latency in your Go applications. It wraps the [gorilla/websocket](https://pkg.go.dev/github.com/gorilla/websocket) package for the WebSocket protocol implementation, and measures the duration of the different phases of the connection cycle. The program takes inspiration from the [go-httpstat](https://github.com/tcnksm/go-httpstat) package, which is useful for tracing HTTP requests.
 
 ## Install
 
-The package has been tested to work with Go 1.18. Install to use in your project with `go get`:
+The package is built on Go 1.21 but it has been tested to work with Go 1.18, in case that is of interest. Install to use in your project with `go get`:
 
 ```bash
 go get github.com/jakobilobi/go-wsstat
