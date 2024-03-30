@@ -122,7 +122,6 @@ func (ws *WSStat) Dial(url *url.URL) error {
 // Wraps the gorilla/websocket ReadMessage method.
 // Sets result times: MessageRoundTrip, FirstMessageResponse
 // Requires that a timer has been started with WriteMessage to measure the round-trip time.
-// TODO: include in example
 func (ws *WSStat) ReadMessage(writeStart time.Time) (int, []byte, error) {
 	ws.conn.SetReadDeadline(time.Now().Add(time.Second * 5))
 	msgType, p, err := ws.conn.ReadMessage()
@@ -137,7 +136,6 @@ func (ws *WSStat) ReadMessage(writeStart time.Time) (int, []byte, error) {
 // WriteMessage sends a message through the WebSocket connection and 
 // starts a timer to measure the round-trip time.
 // Wraps the gorilla/websocket WriteMessage method.
-// TODO: include in example
 func (ws *WSStat) WriteMessage(messageType int, data []byte) (time.Time, error) {
 	start := time.Now()
 	err := ws.conn.WriteMessage(messageType, data)
