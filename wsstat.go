@@ -48,6 +48,8 @@ type CertificateDetails struct {
 // Result holds durations of each phase of a WebSocket connection, cumulative durations over
 // the connection timeline, and other relevant connection details.
 type Result struct {
+	URL url.URL        // URL of the WebSocket connection
+
 	// Duration of each phase of the connection
 	DNSLookup        time.Duration // Time to resolve DNS
 	TCPConnection    time.Duration // TCP connection establishment time
@@ -107,6 +109,7 @@ func (ws *WSStat) CloseConn() error {
 // If required, specify custom headers to merge with the default headers.
 // Sets result times: WSHandshake, WSHandshakeDone
 func (ws *WSStat) Dial(url *url.URL, customHeaders http.Header) error {
+	ws.Result.URL = *url
 	start := time.Now()
 	headers := http.Header{}
 	headers.Add("Origin", "http://example.com") // Add as default header, required by some servers
@@ -296,15 +299,25 @@ func (r Result) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
+			fmt.Fprintln(s, "URL")
+			fmt.Fprintf(s, "  Scheme: %s\n", r.URL.Scheme)
+			fmt.Fprintf(s, "  Host: %s\n", r.URL.Host)
+			if r.URL.Path != "" {
+				fmt.Fprintf(s, "  Path: %s\n", r.URL.Path)
+			}
+			if r.URL.RawQuery != "" {
+				fmt.Fprintf(s, "  Query: %s\n", r.URL.RawQuery)
+			}
+
 			if r.TLSState != nil {
-				fmt.Fprintf(s, "TLS handshake details:\n")
+				fmt.Fprintf(s, "TLS handshake details\n")
 				fmt.Fprintf(s, "  Version: %s\n", tls.VersionName(r.TLSState.Version))
 				fmt.Fprintf(s, "  Cipher Suite: %s\n", tls.CipherSuiteName(r.TLSState.CipherSuite))
 				fmt.Fprintf(s, "  Server Name: %s\n", r.TLSState.ServerName)
 				fmt.Fprintf(s, "  Handshake Complete: %t\n", r.TLSState.HandshakeComplete)
 
 				for i, cert := range r.CertificateDetails() {
-					fmt.Fprintf(s, "Certificate %d:\n", i+1)
+					fmt.Fprintf(s, "Certificate %d\n", i+1)
 					fmt.Fprintf(s, "  Common Name: %s\n", cert.CommonName)
 					fmt.Fprintf(s, "  Issuer: %s\n", cert.Issuer)
 					fmt.Fprintf(s, "  Not Before: %s\n", cert.NotBefore)
@@ -319,13 +332,13 @@ func (r Result) Format(s fmt.State, verb rune) {
 			}
 
 			if r.RequestHeaders != nil {
-				fmt.Fprintf(s, "Request headers:\n")
+				fmt.Fprintf(s, "Request headers\n")
 				for k, v := range r.RequestHeaders {
 					fmt.Fprintf(s, "  %s: %s\n", k, v)
 				}
 			}
 			if r.ResponseHeaders != nil {
-				fmt.Fprintf(s, "Response headers:\n")
+				fmt.Fprintf(s, "Response headers\n")
 				for k, v := range r.ResponseHeaders {
 					fmt.Fprintf(s, "  %s: %s\n", k, v)
 				}
