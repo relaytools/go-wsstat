@@ -48,7 +48,8 @@ type CertificateDetails struct {
 // Result holds durations of each phase of a WebSocket connection, cumulative durations over
 // the connection timeline, and other relevant connection details.
 type Result struct {
-	URL url.URL        // URL of the WebSocket connection
+	IPs []string // IP addresses of the WebSocket connection
+	URL url.URL  // URL of the WebSocket connection
 
 	// Duration of each phase of the connection
 	DNSLookup        time.Duration // Time to resolve DNS
@@ -124,6 +125,16 @@ func (ws *WSStat) Dial(url *url.URL, customHeaders http.Header) error {
 	ws.conn = conn
 	ws.Result.WSHandshake = totalDialDuration - ws.Result.TLSHandshakeDone
 	ws.Result.WSHandshakeDone = totalDialDuration
+
+	// Lookup IP
+	ips, err := net.LookupIP(url.Hostname())
+	if err != nil {
+		return fmt.Errorf("failed to lookup IP: %v", err)
+	}
+	ws.Result.IPs = make([]string, len(ips))
+	for i, ip := range ips {
+		ws.Result.IPs[i] = ip.String()
+	}
 
 	// Capture request and response headers
 	// documentedDefaultHeaders lists the known headers that Gorilla WebSocket sets by default.
@@ -302,12 +313,16 @@ func (r Result) Format(s fmt.State, verb rune) {
 			fmt.Fprintln(s, "URL")
 			fmt.Fprintf(s, "  Scheme: %s\n", r.URL.Scheme)
 			fmt.Fprintf(s, "  Host: %s\n", r.URL.Host)
+			fmt.Fprintf(s, "  Port: %s\n", r.URL.Port())
 			if r.URL.Path != "" {
 				fmt.Fprintf(s, "  Path: %s\n", r.URL.Path)
 			}
 			if r.URL.RawQuery != "" {
 				fmt.Fprintf(s, "  Query: %s\n", r.URL.RawQuery)
 			}
+			fmt.Fprintln(s, "IP")
+			fmt.Fprintf(s, "  %v\n", r.IPs)
+			fmt.Fprintln(s)
 
 			if r.TLSState != nil {
 				fmt.Fprintf(s, "TLS handshake details\n")
