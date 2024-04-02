@@ -19,6 +19,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -313,7 +314,7 @@ func (r Result) Format(s fmt.State, verb rune) {
 			fmt.Fprintln(s, "URL")
 			fmt.Fprintf(s, "  Scheme: %s\n", r.URL.Scheme)
 			fmt.Fprintf(s, "  Host: %s\n", r.URL.Host)
-			fmt.Fprintf(s, "  Port: %s\n", r.URL.Port())
+			fmt.Fprintf(s, "  Port: %s\n", Port(r.URL))
 			if r.URL.Path != "" {
 				fmt.Fprintf(s, "  Path: %s\n", r.URL.Path)
 			}
@@ -473,6 +474,26 @@ func MeasureLatencyPing(url *url.URL, customHeaders http.Header) (Result, error)
 	}
 	ws.CloseConn()
 	return *ws.Result, nil
+}
+
+// Port returns the port number from a URL.
+func Port(u url.URL) string {
+	_, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to split host and port")
+	}
+	if port == "" {
+		// No port specified in the URL, return the default port based on the scheme
+		switch u.Scheme {
+		case "ws":
+		    return "80"
+		case "wss":
+		    return "443"
+		default:
+		    return ""
+		}
+	}
+    return port
 }
 
 // newDialer initializes and returns a websocket.Dialer with customized dial functions to measure the connection phases.
