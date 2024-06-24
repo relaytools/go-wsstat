@@ -549,7 +549,8 @@ func newDialer(result *Result) *websocket.Dialer {
 			if tlsConfig == nil {
 				// Fall back to a default configuration
 				// Note: the default is an insecure configuration, use with caution
-				tlsConfig = &tls.Config{InsecureSkipVerify: true}
+				//tlsConfig = &tls.Config{InsecureSkipVerify: true}
+				tlsConfig = &tls.Config{ServerName: host}
 			}
 			tlsStart := time.Now()
 			// Initiate TLS handshake over the established TCP connection
