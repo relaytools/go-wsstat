@@ -1,4 +1,4 @@
-module github.com/jakobilobi/go-wsstat
+module github.com/relaytools/go-wsstat
 
 go 1.21
 
